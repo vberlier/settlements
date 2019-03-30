@@ -1,0 +1,16 @@
+[
+{
+  "modid": "settlements",
+  "name": "Settlements Mod",
+  "description": "Generate settlements in Minecraft.",
+  "version": "0.1.0",
+  "mcversion": "1.12",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Valentin Berlier"],
+  "credits": "The Forge and FML guys",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
