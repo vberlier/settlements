@@ -1,1 +1,2 @@
 commands.buildsettlement.usage=/BuildSettlement <x1> <y1> <z1> <x2> <y2> <z2>
+commands.buildsettlement.outOfWorld=Cannot place blocks outside of the world

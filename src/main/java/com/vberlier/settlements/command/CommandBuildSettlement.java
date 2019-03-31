@@ -1,5 +1,6 @@
 package com.vberlier.settlements.command;
 
+import com.vberlier.settlements.event.SettlementEvent;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -7,6 +8,8 @@ import net.minecraft.command.WrongUsageException;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
+import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,6 +46,17 @@ public class CommandBuildSettlement extends CommandBase {
 
         if (args.length != 6) {
             throw new WrongUsageException(getUsage(sender));
+        }
+
+        BlockPos blockPos1 = parseBlockPos(sender, args, 0, false);
+        BlockPos blockPos2 = parseBlockPos(sender, args, 3, false);
+
+        StructureBoundingBox boundingBox = new StructureBoundingBox(blockPos1, blockPos2);
+
+        if (world.isAreaLoaded(boundingBox)) {
+            MinecraftForge.EVENT_BUS.post(new SettlementEvent.Generate(world, boundingBox));
+        } else {
+            throw new CommandException("commands.buildsettlement.outOfWorld");
         }
     }
 
