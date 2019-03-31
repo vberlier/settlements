@@ -1,9 +1,7 @@
 package com.vberlier.settlements.eventhandler;
 
-import com.vberlier.settlements.Generator;
-import com.vberlier.settlements.SettlementsMod;
+import com.vberlier.settlements.generator.Generator;
 import com.vberlier.settlements.event.SettlementEvent;
-import com.vberlier.settlements.job.BuildSettlement;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -18,10 +16,6 @@ public class GenerateEventHandler {
             return;
         }
 
-        Generator generator = SettlementsMod.instance.getGenerator();
-
-        if (generator != null) {
-            generator.submit(new BuildSettlement(world, event.getBoundingBox()));
-        }
+        new Generator(world, event.getBoundingBox()).buildSettlement();
     }
 }

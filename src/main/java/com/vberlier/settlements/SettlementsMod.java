@@ -1,6 +1,7 @@
 package com.vberlier.settlements;
 
 import com.vberlier.settlements.command.CommandBuildSettlement;
+import com.vberlier.settlements.generator.JobProcessor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -22,7 +23,7 @@ public class SettlementsMod {
     @Mod.Instance(MODID)
     public static SettlementsMod instance;
 
-    private Generator generator;
+    private JobProcessor jobProcessor;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -38,18 +39,18 @@ public class SettlementsMod {
     public void serverStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new CommandBuildSettlement());
 
-        logger.info("Creating generator");
-        generator = new Generator(logger);
+        logger.info("Creating job processor");
+        jobProcessor = new JobProcessor(logger);
     }
 
     @EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
-        logger.info("Resetting generator");
-        generator = null;
+        logger.info("Resetting job processor");
+        jobProcessor = null;
     }
 
     @Nullable
-    public Generator getGenerator() {
-        return generator;
+    public JobProcessor getJobProcessor() {
+        return jobProcessor;
     }
 }
