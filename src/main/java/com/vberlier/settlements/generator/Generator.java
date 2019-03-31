@@ -1,32 +1,24 @@
 package com.vberlier.settlements.generator;
 
-import com.google.common.base.MoreObjects;
-import com.vberlier.settlements.SettlementsMod;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 
 public class Generator {
-    public final World world;
-    public final StructureBoundingBox boundingBox;
+    private final World world;
+    private final StructureBoundingBox boundingBox;
+    private final HeightMap heightMap;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
         this.boundingBox = boundingBox;
+        heightMap = new HeightMap(world, boundingBox);
     }
 
     public void buildSettlement() {
-        JobProcessor jobProcessor = SettlementsMod.instance.getJobProcessor();
-
-        if (jobProcessor != null) {
-            jobProcessor.submit(this, new BuildSettlementJob());
+        for (BlockPos pos : heightMap.getPositions()) {
+            world.setBlockState(pos.add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
         }
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("world", world.provider.getDimensionType().getName())
-                .add("boudingBox", boundingBox)
-                .toString();
     }
 }

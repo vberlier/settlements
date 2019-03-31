@@ -16,6 +16,7 @@ public class GenerateEventHandler {
             return;
         }
 
-        new Generator(world, event.getBoundingBox()).buildSettlement();
+        Generator generator = new Generator(world, event.getBoundingBox());
+        generator.buildSettlement();
     }
 }
