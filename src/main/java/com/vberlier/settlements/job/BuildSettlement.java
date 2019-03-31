@@ -20,6 +20,6 @@ public class BuildSettlement extends Job {
 
     @Override
     public MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("boundingBox", boundingBox.toString());
+        return super.toStringHelper().add("boundingBox", boundingBox);
     }
 }
