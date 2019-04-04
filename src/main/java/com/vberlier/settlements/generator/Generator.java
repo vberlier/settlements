@@ -1,5 +1,6 @@
 package com.vberlier.settlements.generator;
 
+import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
@@ -20,6 +21,9 @@ public class Generator {
     private final BlockPos[][] heightMap;
     private final BlockPos[][] terrainMap;
     private final CoordinatesInfo[][] coordinatesInfos;
+    private final int verticesSizeX;
+    private final int verticesSizeZ;
+    private final Vec[][] vertices;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -34,10 +38,15 @@ public class Generator {
         heightMap = new BlockPos[sizeX][sizeZ];
         terrainMap = new BlockPos[sizeX][sizeZ];
         coordinatesInfos = new CoordinatesInfo[sizeX][sizeZ];
+
+        verticesSizeX = sizeX - 1;
+        verticesSizeZ = sizeZ - 1;
+        vertices = new Vec[verticesSizeX][verticesSizeZ];
     }
 
     public void buildSettlement() {
         computeMaps();
+        computeVertices();
 
         for (int i = 0; i < sizeX; i++) {
             for (int j = 0; j < sizeZ; j++) {
@@ -47,6 +56,12 @@ public class Generator {
                     world.setBlockState(coordinates.getHighestBlock().add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
                     world.setBlockState(coordinates.getTerrainBlock(), Blocks.BEDROCK.getDefaultState());
                 }
+            }
+        }
+
+        for (int i = 0; i < verticesSizeX; i++) {
+            for (int j = 0; j < verticesSizeZ; j++) {
+                world.setBlockState(vertices[i][j].add(0, 12, 0).block(), Blocks.COBBLESTONE_WALL.getDefaultState());
             }
         }
     }
@@ -83,6 +98,14 @@ public class Generator {
 
                 terrainMap[i][j] = pos;
                 coordinates.setTerrainBlock(pos);
+            }
+        }
+    }
+
+    private void computeVertices() {
+        for (int i = 0; i < verticesSizeX; i++) {
+            for (int j = 0; j < verticesSizeZ; j++) {
+                vertices[i][j] = Vec.average(terrainMap[i][j], terrainMap[i + 1][j], terrainMap[i + 1][j + 1], terrainMap[i][j + 1]);
             }
         }
     }
