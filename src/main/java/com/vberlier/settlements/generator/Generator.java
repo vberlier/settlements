@@ -24,6 +24,7 @@ public class Generator {
     private final int verticesSizeX;
     private final int verticesSizeZ;
     private final Vec[][] vertices;
+    private final Vec[][] normals;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -42,11 +43,22 @@ public class Generator {
         verticesSizeX = sizeX - 1;
         verticesSizeZ = sizeZ - 1;
         vertices = new Vec[verticesSizeX][verticesSizeZ];
+
+        normals = new Vec[sizeX][sizeZ];
+
+        for (int i = 0; i < sizeX; i++) {
+            normals[i][sizeZ - 1] = new Vec(0, 1, 0);
+        }
+
+        for (int i = 0; i < sizeZ; i++) {
+            normals[sizeX - 1][i] = new Vec(0, 1, 0);
+        }
     }
 
     public void buildSettlement() {
         computeMaps();
         computeVertices();
+        computeNormals();
 
         for (int i = 0; i < sizeX; i++) {
             for (int j = 0; j < sizeZ; j++) {
@@ -56,12 +68,8 @@ public class Generator {
                     world.setBlockState(coordinates.getHighestBlock().add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
                     world.setBlockState(coordinates.getTerrainBlock(), Blocks.BEDROCK.getDefaultState());
                 }
-            }
-        }
 
-        for (int i = 0; i < verticesSizeX; i++) {
-            for (int j = 0; j < verticesSizeZ; j++) {
-                world.setBlockState(vertices[i][j].add(0, 12, 0).block(), Blocks.COBBLESTONE_WALL.getDefaultState());
+                world.setBlockState(coordinates.getNormal().mul(5).add(coordinates.getTerrainBlock()).block(), Blocks.SLIME_BLOCK.getDefaultState());
             }
         }
     }
@@ -106,6 +114,16 @@ public class Generator {
         for (int i = 0; i < verticesSizeX; i++) {
             for (int j = 0; j < verticesSizeZ; j++) {
                 vertices[i][j] = Vec.average(terrainMap[i][j], terrainMap[i + 1][j], terrainMap[i + 1][j + 1], terrainMap[i][j + 1]);
+            }
+        }
+    }
+
+    private void computeNormals() {
+        for (int i = 1; i < sizeX - 1; i++) {
+            for (int j = 1; j < sizeZ - 1; j++) {
+                Vec normal = Vec.normal(vertices[i - 1][j - 1], vertices[i - 1][j], vertices[i][j], vertices[i][j - 1]).normalize();
+                normals[i][j] = normal;
+                coordinatesInfos[i][j].setNormal(normal);
             }
         }
     }

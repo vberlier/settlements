@@ -5,6 +5,8 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Arrays;
 
 public class Vec {
+    public static final Vec up = new Vec(0, 1, 0);
+
     public final double x;
     public final double y;
     public final double z;
@@ -123,11 +125,28 @@ public class Vec {
         return new BlockPos(Math.round(x), Math.round(y), Math.round(z));
     }
 
+    public double length() {
+        return Math.sqrt(x * x + y * y + z * z);
+    }
+
+    public Vec normalize() {
+        double length = length();
+        return new Vec(x / length, y / length, z / length);
+    }
+
     public static Vec average(Vec ...vectors) {
         return Arrays.stream(vectors).reduce(new Vec(0), Vec::add).div(vectors.length);
     }
 
     public static Vec average(BlockPos ...positions) {
         return new Vec(Arrays.stream(positions).reduce(new BlockPos(0, 0, 0), BlockPos::add)).div(positions.length);
+    }
+
+    public static Vec normal(Vec v1, Vec v2, Vec v3) {
+        return v3.sub(v2).cross(v1.sub(v2));
+    }
+
+    public static Vec normal(Vec v1, Vec v2, Vec v3, Vec v4) {
+        return Vec.average(normal(v1, v2, v3), normal(v1, v3, v4));
     }
 }
