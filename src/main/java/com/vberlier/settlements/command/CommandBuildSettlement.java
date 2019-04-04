@@ -25,7 +25,7 @@ public class CommandBuildSettlement extends CommandBase {
 
     @Nonnull
     public List<String> getAliases() {
-        return Arrays.asList("build");
+        return Arrays.asList("build", "b");
     }
 
     public int getRequiredPermissionLevel() {
