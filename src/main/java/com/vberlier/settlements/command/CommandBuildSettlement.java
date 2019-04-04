@@ -54,7 +54,12 @@ public class CommandBuildSettlement extends CommandBase {
         StructureBoundingBox boundingBox = new StructureBoundingBox(blockPos1, blockPos2);
 
         if (world.isAreaLoaded(boundingBox)) {
-            MinecraftForge.EVENT_BUS.post(new SettlementEvent.Generate(world, boundingBox));
+            try {
+                MinecraftForge.EVENT_BUS.post(new SettlementEvent.Generate(world, boundingBox));
+            } catch (Throwable e) {
+                e.printStackTrace();
+                throw e;
+            }
         } else {
             throw new CommandException("commands.buildsettlement.outOfWorld");
         }
