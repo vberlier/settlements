@@ -16,6 +16,7 @@ public class Generator {
     private final int originZ;
     private final int sizeX;
     private final int sizeZ;
+    private final int[][] heights;
     private final BlockPos[][] heightMap;
     private final BlockPos[][] terrainMap;
     private final CoordinateData[][] coordinateData;
@@ -29,6 +30,7 @@ public class Generator {
         sizeX = boundingBox.getXSize();
         sizeZ = boundingBox.getZSize();
 
+        heights = new int[sizeX][sizeZ];
         heightMap = new BlockPos[sizeX][sizeZ];
         terrainMap = new BlockPos[sizeX][sizeZ];
         coordinateData = new CoordinateData[sizeX][sizeZ];
@@ -56,6 +58,7 @@ public class Generator {
                 int z = originZ + j;
 
                 int y = world.getHeight(x, z);
+                heights[i][j] = y;
 
                 BlockPos pos = new BlockPos(x, y, z);
                 heightMap[i][j] = pos;
