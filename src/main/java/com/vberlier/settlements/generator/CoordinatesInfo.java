@@ -10,6 +10,7 @@ public class CoordinatesInfo {
     private BlockPos terrainBlock;
     private boolean containsLiquids = false;
     private Vec normal;
+    private double distanceFromCenter = 0;
 
     public CoordinatesInfo(int i, int j, BlockPos highestBlock) {
         this.i = i;
@@ -53,5 +54,13 @@ public class CoordinatesInfo {
 
     public void setNormal(Vec normal) {
         this.normal = normal;
+    }
+
+    public double getDistanceFromCenter() {
+        return distanceFromCenter;
+    }
+
+    public void setDistanceFromCenter(double distanceFromCenter) {
+        this.distanceFromCenter = distanceFromCenter;
     }
 }

@@ -25,6 +25,8 @@ public class Generator {
     private final int verticesSizeZ;
     private final Vec[][] vertices;
     private final Vec[][] normals;
+    private final Vec origin;
+    private final Vec center;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -53,6 +55,9 @@ public class Generator {
         for (int i = 0; i < sizeZ; i++) {
             normals[sizeX - 1][i] = new Vec(0, 1, 0);
         }
+
+        origin = new Vec(originX, 0, originZ);
+        center = origin.add((double) sizeX / 2.0, 0, (double) sizeZ / 2.0);
     }
 
     public void buildSettlement() {
@@ -88,6 +93,8 @@ public class Generator {
 
                 CoordinatesInfo coordinates = new CoordinatesInfo(i, j, pos);
                 this.coordinatesInfos[i][j] = coordinates;
+
+                coordinates.setDistanceFromCenter(center.sub(x, 0, z).length());
 
                 while (pos.getY() > 0) {
                     IBlockState state = world.getBlockState(pos);
