@@ -19,7 +19,7 @@ public class Generator {
     private final int[][] heights;
     private final BlockPos[][] heightMap;
     private final BlockPos[][] terrainMap;
-    private final CoordinateData[][] coordinateData;
+    private final CoordinatesInfo[][] coordinatesInfos;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -33,7 +33,7 @@ public class Generator {
         heights = new int[sizeX][sizeZ];
         heightMap = new BlockPos[sizeX][sizeZ];
         terrainMap = new BlockPos[sizeX][sizeZ];
-        coordinateData = new CoordinateData[sizeX][sizeZ];
+        coordinatesInfos = new CoordinatesInfo[sizeX][sizeZ];
     }
 
     public void buildSettlement() {
@@ -41,11 +41,11 @@ public class Generator {
 
         for (int i = 0; i < sizeX; i++) {
             for (int j = 0; j < sizeZ; j++) {
-                CoordinateData data = coordinateData[i][j];
-                world.setBlockState(heightMap[i][j].add(0, 1, 0), data.containsLiquids() ? Blocks.SLIME_BLOCK.getDefaultState() : Blocks.STAINED_GLASS.getDefaultState());
+                CoordinatesInfo coordinates = this.coordinatesInfos[i][j];
 
-                if (data.getDecorationHeight() < 3) {
-                    world.setBlockState(terrainMap[i][j], Blocks.RED_NETHER_BRICK.getDefaultState());
+                if (coordinates.getDecorationHeight() < 3 && !coordinates.containsLiquids()) {
+                    world.setBlockState(coordinates.getHighestBlock().add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
+                    world.setBlockState(coordinates.getTerrainBlock(), Blocks.BEDROCK.getDefaultState());
                 }
             }
         }
@@ -63,15 +63,15 @@ public class Generator {
                 BlockPos pos = new BlockPos(x, y, z);
                 heightMap[i][j] = pos;
 
-                CoordinateData data = new CoordinateData();
-                coordinateData[i][j] = data;
+                CoordinatesInfo coordinates = new CoordinatesInfo(i, j, pos);
+                this.coordinatesInfos[i][j] = coordinates;
 
                 while (pos.getY() > 0) {
                     IBlockState state = world.getBlockState(pos);
                     Block block = state.getBlock();
 
-                    if (world.containsAnyLiquid(new AxisAlignedBB(pos))) {
-                        data.setContainsLiquids(true);
+                    if (!coordinates.containsLiquids() && world.containsAnyLiquid(new AxisAlignedBB(pos))) {
+                        coordinates.setContainsLiquids(true);
                     }
 
                     if (block.isAir(state, world, pos) || block.isPassable(world, pos) || block.isFlammable(world, pos, EnumFacing.UP)) {
@@ -82,8 +82,7 @@ public class Generator {
                 }
 
                 terrainMap[i][j] = pos;
-
-                data.setDecorationHeight(y - pos.getY());
+                coordinates.setTerrainBlock(pos);
             }
         }
     }
