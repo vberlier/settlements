@@ -1,5 +1,7 @@
 package com.vberlier.settlements.generator;
 
+import com.google.common.graph.MutableValueGraph;
+import com.google.common.graph.ValueGraphBuilder;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -9,6 +11,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
+
+import java.util.PriorityQueue;
 
 public class Generator {
     private final World world;
@@ -27,6 +31,7 @@ public class Generator {
     private final Vec[][] normals;
     private final Vec origin;
     private final Vec center;
+    private final MutableValueGraph<CoordinatesInfo, Integer> graph;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -49,34 +54,26 @@ public class Generator {
         normals = new Vec[sizeX][sizeZ];
 
         for (int i = 0; i < sizeX; i++) {
+            normals[i][0] = new Vec(0, 1, 0);
             normals[i][sizeZ - 1] = new Vec(0, 1, 0);
         }
 
         for (int i = 0; i < sizeZ; i++) {
+            normals[0][i] = new Vec(0, 1, 0);
             normals[sizeX - 1][i] = new Vec(0, 1, 0);
         }
 
         origin = new Vec(originX, 0, originZ);
         center = origin.add((double) sizeX / 2.0, 0, (double) sizeZ / 2.0);
+
+        graph = ValueGraphBuilder.undirected().build();
     }
 
     public void buildSettlement() {
         computeMaps();
         computeVertices();
         computeNormals();
-
-        for (int i = 0; i < sizeX; i++) {
-            for (int j = 0; j < sizeZ; j++) {
-                CoordinatesInfo coordinates = this.coordinatesInfos[i][j];
-
-                if (coordinates.getDecorationHeight() < 3 && !coordinates.containsLiquids()) {
-                    world.setBlockState(coordinates.getHighestBlock().add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
-                    world.setBlockState(coordinates.getTerrainBlock(), Blocks.BEDROCK.getDefaultState());
-                }
-
-                world.setBlockState(coordinates.getNormal().mul(5).add(coordinates.getTerrainBlock()).block(), Blocks.SLIME_BLOCK.getDefaultState());
-            }
-        }
+        computeNodes();
     }
 
     private void computeMaps() {
@@ -132,6 +129,25 @@ public class Generator {
                 normals[i][j] = normal;
                 coordinatesInfos[i][j].setNormal(normal);
             }
+        }
+    }
+
+    private void computeNodes() {
+        PriorityQueue<CoordinatesInfo> queue = new PriorityQueue<>();
+
+        for (int i = 1; i < sizeX - 1; i++) {
+            for (int j = 1; j < sizeZ - 1; j++) {
+                queue.add(coordinatesInfos[i][j]);
+            }
+        }
+
+        int i = 0;
+
+        while (!queue.isEmpty()) {
+            CoordinatesInfo coordinates = queue.poll();
+            BlockPos pos = coordinates.getTerrainBlock();
+            world.setBlockState(new BlockPos(pos.getX(), i * (120 - boundingBox.maxY) / (sizeX * sizeZ) + boundingBox.maxY, pos.getZ()), Blocks.STAINED_GLASS.getDefaultState());
+            i++;
         }
     }
 }

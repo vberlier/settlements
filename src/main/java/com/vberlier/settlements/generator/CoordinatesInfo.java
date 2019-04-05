@@ -3,7 +3,9 @@ package com.vberlier.settlements.generator;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
 
-public class CoordinatesInfo {
+import java.util.Objects;
+
+public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
     public final int i;
     public final int j;
     private BlockPos highestBlock;
@@ -20,16 +22,20 @@ public class CoordinatesInfo {
         normal = Vec.up;
     }
 
+    public int getDecorationHeight() {
+        return highestBlock.getY() - terrainBlock.getY();
+    }
+
+    public double getVerticality() {
+        return Vec.up.cross(normal).length();
+    }
+
     public void setContainsLiquids(boolean containsLiquids) {
         this.containsLiquids = containsLiquids;
     }
 
     public boolean containsLiquids() {
         return containsLiquids;
-    }
-
-    public int getDecorationHeight() {
-        return highestBlock.getY() - terrainBlock.getY();
     }
 
     public BlockPos getHighestBlock() {
@@ -62,5 +68,44 @@ public class CoordinatesInfo {
 
     public void setDistanceFromCenter(double distanceFromCenter) {
         this.distanceFromCenter = distanceFromCenter;
+    }
+
+    @Override
+    public int compareTo(CoordinatesInfo o) {
+        int res = Boolean.compare(containsLiquids, o.containsLiquids);
+        if (res != 0) {
+            return res;
+        }
+
+        res = Double.compare(getVerticality(), o.getVerticality());
+        if (res != 0) {
+            return res;
+        }
+
+        res = Integer.compare(getDecorationHeight(), o.getDecorationHeight());
+        if (res != 0) {
+            return res;
+        }
+
+        res = Double.compare(distanceFromCenter, o.distanceFromCenter);
+        if (res != 0) {
+            return res;
+        }
+
+        return terrainBlock.compareTo(o.terrainBlock);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CoordinatesInfo that = (CoordinatesInfo) o;
+        return i == that.i &&
+                j == that.j;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(i, j);
     }
 }

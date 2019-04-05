@@ -3,8 +3,9 @@ package com.vberlier.settlements.util;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
+import java.util.Objects;
 
-public class Vec {
+public class Vec implements Comparable<Vec> {
     public static final Vec up = new Vec(0, 1, 0);
 
     public final double x;
@@ -148,5 +149,35 @@ public class Vec {
 
     public static Vec normal(Vec v1, Vec v2, Vec v3, Vec v4) {
         return Vec.average(normal(v1, v2, v3), normal(v1, v3, v4));
+    }
+
+    @Override
+    public int compareTo(Vec o) {
+        int res = Double.compare(y, o.y);
+        if (res != 0) {
+            return res;
+        }
+
+        res = Double.compare(x, o.x);
+        if (res != 0) {
+            return res;
+        }
+
+        return Double.compare(z, o.z);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Vec vec = (Vec) o;
+        return Double.compare(vec.x, x) == 0 &&
+                Double.compare(vec.y, y) == 0 &&
+                Double.compare(vec.z, z) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y, z);
     }
 }
