@@ -42,6 +42,7 @@ public class Generator {
 
     private int slotSize = 300;
     private double slotFlexibility = 0.45;
+    private double normalConnectivity = 6;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -237,11 +238,28 @@ public class Generator {
         int color = 0;
 
         for (Slot node : graph.nodes()) {
+            Vec modifier = node.getNormal().mul(normalConnectivity);
+            int normalOffsetI = (int) Math.round(modifier.x);
+            int normalOffsetJ = (int) Math.round(modifier.z);
+
             for (Position coordinates : node.getConvexHull()) {
                 Slot neighbor = coordinates.getSurface();
 
                 if (neighbor != null && neighbor != node) {
                     graph.putEdgeValue(node, neighbor, 1);
+                }
+
+                int i = coordinates.i + normalOffsetI;
+                int j = coordinates.j + normalOffsetJ;
+
+                if (i < 1 || i >= sizeX - 1 || j < 1 || j >= sizeZ - 1) {
+                    continue;
+                }
+
+                neighbor = positions[i][j].getSurface();
+
+                if (neighbor != null && neighbor != node) {
+                    graph.putEdgeValue(node, neighbor, 2);
                 }
             }
 
@@ -268,12 +286,14 @@ public class Generator {
             color++;
         }
 
-        for (EndpointPair<Slot> nodes : graph.edges()) {
-            Position first = nodes.nodeU().getCenter();
-            Position second = nodes.nodeV().getCenter();
+        for (EndpointPair<Slot> edge : graph.edges()) {
+            Slot nodeU = edge.nodeU();
+            Slot nodeV = edge.nodeV();
+            Position first = nodeU.getCenter();
+            Position second = nodeV.getCenter();
 
             for (Point point : new Point(first).line(second)) {
-                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 1, 0), Blocks.BEDROCK.getDefaultState());
+                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 1, 0), graph.edgeValue(nodeU, nodeV) == 2 ? Blocks.REDSTONE_BLOCK.getDefaultState() : Blocks.BEDROCK.getDefaultState());
             }
         }
     }
@@ -292,5 +312,13 @@ public class Generator {
 
     public void setSlotFlexibility(double slotFlexibility) {
         this.slotFlexibility = slotFlexibility;
+    }
+
+    public double getNormalConnectivity() {
+        return normalConnectivity;
+    }
+
+    public void setNormalConnectivity(double normalConnectivity) {
+        this.normalConnectivity = normalConnectivity;
     }
 }
