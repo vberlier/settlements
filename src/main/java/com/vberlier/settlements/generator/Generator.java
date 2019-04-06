@@ -168,8 +168,6 @@ public class Generator {
             int prevCount = 0;
             int count = surface.size();
 
-            int foo = 1;
-
             while (prevCount != count && surface.size() < 200) {
                 for (CoordinatesInfo coordinates : edge) {
                     for (int[] offset : offsets) {
@@ -219,8 +217,6 @@ public class Generator {
 
                 prevCount = count;
                 count = surface.size();
-
-                foo++;
             }
 
             if (surface.size() < 200) {
