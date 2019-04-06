@@ -226,7 +226,7 @@ public class Generator {
                 continue;
             }
 
-            Slot node = new Slot(normal, surface, edge, positions);
+            Slot node = new Slot(surface, edge, positions);
             graph.addNode(node);
         }
 
@@ -243,6 +243,10 @@ public class Generator {
 
             for (Position coordinates : node.getSurfaceCoordinates()) {
                 world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
+            }
+
+            for (int i = 0; i < 6; i++) {
+                world.setBlockState(node.getNormal().mul(i).add(node.getCenter().getTerrainBlock()).block(), Blocks.IRON_BLOCK.getDefaultState());
             }
 
             color++;

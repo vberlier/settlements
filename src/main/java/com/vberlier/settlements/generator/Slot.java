@@ -7,10 +7,10 @@ import net.minecraft.util.math.BlockPos;
 import java.util.*;
 
 public class Slot {
-    private final Vec normal;
     private final Position[] surfaceCoordinates;
     private final Position[] edge;
     private final Position[][] terrainCoordinates;
+    private Vec normal;
     private Vec middle;
     private int minI;
     private int minJ;
@@ -22,8 +22,7 @@ public class Slot {
     private Position center;
     private final Set<Position> convexHull;
 
-    public Slot(Vec normal, Collection<Position> surfaceCoordinates, Collection<Position> edge, Position[][] terrainCoordinates) {
-        this.normal = normal;
+    public Slot(Collection<Position> surfaceCoordinates, Collection<Position> edge, Position[][] terrainCoordinates) {
         this.surfaceCoordinates = surfaceCoordinates.toArray(new Position[0]);
         this.edge = edge.toArray(new Position[0]);
         this.terrainCoordinates = terrainCoordinates;
@@ -33,11 +32,13 @@ public class Slot {
         minI = maxI = first.i;
         minJ = maxJ = first.j;
 
+        normal = new Vec(0);
         middle = new Vec(0);
 
         for (Position coordinates : surfaceCoordinates) {
             coordinates.setSurface(this);
 
+            normal = normal.add(coordinates.getNormal());
             middle = middle.add(coordinates.getTerrainBlock());
 
             minI = Math.min(minI, coordinates.i);
@@ -46,6 +47,7 @@ public class Slot {
             maxJ = Math.max(maxJ, coordinates.j);
         }
 
+        normal = normal.div(surfaceCoordinates.size());
         middle = middle.div(surfaceCoordinates.size());
 
         width = maxI - minI;
