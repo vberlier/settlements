@@ -7,11 +7,13 @@ import net.minecraft.util.math.BlockPos;
 import java.util.*;
 
 public class Slot {
-    private final Position[] surfaceCoordinates;
+    private final Position[] surface;
     private final Position[] edge;
-    private final Position[][] terrainCoordinates;
+    private final Position[][] terrain;
     private Vec normal;
     private Vec middle;
+    private Set<Position> liquidBlocks;
+    private Set<Position> vegetationBlocks;
     private int minI;
     private int minJ;
     private int maxI;
@@ -22,12 +24,12 @@ public class Slot {
     private Position center;
     private final Set<Position> convexHull;
 
-    public Slot(Collection<Position> surfaceCoordinates, Collection<Position> edge, Position[][] terrainCoordinates) {
-        this.surfaceCoordinates = surfaceCoordinates.toArray(new Position[0]);
+    public Slot(Collection<Position> surface, Collection<Position> edge, Position[][] terrain) {
+        this.surface = surface.toArray(new Position[0]);
         this.edge = edge.toArray(new Position[0]);
-        this.terrainCoordinates = terrainCoordinates;
+        this.terrain = terrain;
 
-        Position first = this.surfaceCoordinates[0];
+        Position first = this.surface[0];
 
         minI = maxI = first.i;
         minJ = maxJ = first.j;
@@ -35,28 +37,37 @@ public class Slot {
         normal = new Vec(0);
         middle = new Vec(0);
 
-        for (Position coordinates : surfaceCoordinates) {
-            coordinates.setSurface(this);
+        liquidBlocks = new HashSet<>();
+        vegetationBlocks = new HashSet<>();
 
-            normal = normal.add(coordinates.getNormal());
-            middle = middle.add(coordinates.getTerrainBlock());
+        for (Position pos : surface) {
+            pos.setSurface(this);
 
-            minI = Math.min(minI, coordinates.i);
-            minJ = Math.min(minJ, coordinates.j);
-            maxI = Math.max(maxI, coordinates.i);
-            maxJ = Math.max(maxJ, coordinates.j);
+            normal = normal.add(pos.getNormal());
+            middle = middle.add(pos.getTerrainBlock());
+
+            minI = Math.min(minI, pos.i);
+            minJ = Math.min(minJ, pos.j);
+            maxI = Math.max(maxI, pos.i);
+            maxJ = Math.max(maxJ, pos.j);
+
+            if (pos.containsLiquids()) {
+                liquidBlocks.add(pos);
+            } else if (pos.containsVegetation()) {
+                vegetationBlocks.add(pos);
+            }
         }
 
-        normal = normal.div(surfaceCoordinates.size());
-        middle = middle.div(surfaceCoordinates.size());
+        normal = normal.div(surface.size());
+        middle = middle.div(surface.size());
 
         width = maxI - minI;
         height = maxJ - minJ;
 
-        origin = terrainCoordinates[minI][minJ];
+        origin = terrain[minI][minJ];
         BlockPos originBlock = origin.getTerrainBlock();
 
-        center = terrainCoordinates[(int) (middle.x - originBlock.getX() + minI)][(int) (middle.z - originBlock.getZ() + minJ)];
+        center = terrain[(int) (middle.x - originBlock.getX() + minI)][(int) (middle.z - originBlock.getZ() + minJ)];
 
         convexHull = new HashSet<>();
         computeConvexHull();
@@ -99,7 +110,7 @@ public class Slot {
             }
 
             for (Point point : new Point(edge[p]).line(edge[q])) {
-                convexHull.add(terrainCoordinates[(int) point.x][(int) point.y]);
+                convexHull.add(terrain[(int) point.x][(int) point.y]);
             }
 
             p = q;
@@ -118,8 +129,8 @@ public class Slot {
         return normal;
     }
 
-    public Position[] getSurfaceCoordinates() {
-        return surfaceCoordinates;
+    public Position[] getSurface() {
+        return surface;
     }
 
     public Set<Position> getConvexHull() {
@@ -169,5 +180,13 @@ public class Slot {
 
     public int getHeight() {
         return height;
+    }
+
+    public Set<Position> getLiquidBlocks() {
+        return liquidBlocks;
+    }
+
+    public Set<Position> getVegetationBlocks() {
+        return vegetationBlocks;
     }
 }

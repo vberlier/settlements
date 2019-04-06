@@ -3,6 +3,7 @@ package com.vberlier.settlements.generator;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class Position implements Comparable<Position> {
@@ -10,8 +11,9 @@ public class Position implements Comparable<Position> {
     public final int j;
     private BlockPos highestBlock;
     private BlockPos terrainBlock;
-    private boolean containsLiquids = false;
     private Vec normal;
+    private ArrayList<BlockPos> liquids;
+    private ArrayList<BlockPos> vegetation;
     private double distanceFromCenter = 0;
     private Slot surface;
 
@@ -21,6 +23,8 @@ public class Position implements Comparable<Position> {
         this.highestBlock = highestBlock;
         this.terrainBlock = highestBlock;
         normal = Vec.up;
+        liquids = new ArrayList<>();
+        vegetation = new ArrayList<>();
     }
 
     public int getDecorationHeight() {
@@ -31,12 +35,28 @@ public class Position implements Comparable<Position> {
         return Vec.up.cross(normal).length();
     }
 
-    public void setContainsLiquids(boolean containsLiquids) {
-        this.containsLiquids = containsLiquids;
+    public void addLiquid(BlockPos pos) {
+        liquids.add(pos);
+    }
+
+    public ArrayList<BlockPos> getLiquids() {
+        return liquids;
     }
 
     public boolean containsLiquids() {
-        return containsLiquids;
+        return liquids.size() > 2;
+    }
+
+    public void addVegetation(BlockPos pos) {
+        vegetation.add(pos);
+    }
+
+    public ArrayList<BlockPos> getVegetation() {
+        return vegetation;
+    }
+
+    public boolean containsVegetation() {
+        return getDecorationHeight() > 2 && vegetation.size() > 0;
     }
 
     public BlockPos getHighestBlock() {
@@ -71,9 +91,17 @@ public class Position implements Comparable<Position> {
         this.distanceFromCenter = distanceFromCenter;
     }
 
+    public Slot getSurface() {
+        return surface;
+    }
+
+    public void setSurface(Slot surface) {
+        this.surface = surface;
+    }
+
     @Override
     public int compareTo(Position o) {
-        int res = Boolean.compare(containsLiquids, o.containsLiquids);
+        int res = Integer.compare(liquids.size(), o.liquids.size());
         if (res != 0) {
             return res;
         }
@@ -108,13 +136,5 @@ public class Position implements Comparable<Position> {
     @Override
     public int hashCode() {
         return Objects.hash(i, j);
-    }
-
-    public Slot getSurface() {
-        return surface;
-    }
-
-    public void setSurface(Slot surface) {
-        this.surface = surface;
     }
 }

@@ -107,8 +107,12 @@ public class Generator {
                     IBlockState state = world.getBlockState(pos);
                     Block block = state.getBlock();
 
-                    if (!coordinates.containsLiquids() && world.containsAnyLiquid(new AxisAlignedBB(pos))) {
-                        coordinates.setContainsLiquids(true);
+                    if (world.containsAnyLiquid(new AxisAlignedBB(pos))) {
+                        coordinates.addLiquid(pos);
+                    }
+
+                    if (block.isWood(world, pos) || block.isLeaves(state, world, pos)) {
+                        coordinates.addVegetation(pos);
                     }
 
                     if (block.isAir(state, world, pos) || block.isPassable(world, pos) || block.isFlammable(world, pos, EnumFacing.UP)) {
@@ -241,8 +245,20 @@ public class Generator {
                 }
             }
 
-            for (Position coordinates : node.getSurfaceCoordinates()) {
-                world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
+            for (Position coordinates : node.getSurface()) {
+                world.setBlockState(coordinates.getTerrainBlock(), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
+            }
+
+            for (Position coordinates : node.getLiquidBlocks()) {
+                if (coordinates.containsLiquids()) {
+                    world.setBlockState(coordinates.getHighestBlock().add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
+                }
+            }
+
+            for (Position coordinates : node.getVegetationBlocks()) {
+                for (BlockPos pos : coordinates.getVegetation()) {
+                    world.setBlockState(pos, Blocks.STAINED_GLASS.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.LIME));
+                }
             }
 
             for (int i = 0; i < 6; i++) {
@@ -257,7 +273,7 @@ public class Generator {
             Position second = nodes.nodeV().getCenter();
 
             for (Point point : new Point(first).line(second)) {
-                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 2, 0), Blocks.BEDROCK.getDefaultState());
+                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 1, 0), Blocks.BEDROCK.getDefaultState());
             }
         }
     }
