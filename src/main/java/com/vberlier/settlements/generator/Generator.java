@@ -138,14 +138,14 @@ public class Generator {
     }
 
     private void computeNodes() {
-        Queue<CoordinatesInfo> queue = new PriorityQueue<>();
-        Set<CoordinatesInfo> set = new HashSet<>();
+        Queue<CoordinatesInfo> nextBlocks = new PriorityQueue<>();
+        Set<CoordinatesInfo> availableBlocks = new HashSet<>();
 
         for (int i = 1; i < sizeX - 1; i++) {
             for (int j = 1; j < sizeZ - 1; j++) {
                 CoordinatesInfo coordinates = coordinatesInfos[i][j];
-                queue.add(coordinates);
-                set.add(coordinates);
+                nextBlocks.add(coordinates);
+                availableBlocks.add(coordinates);
             }
         }
 
@@ -153,13 +153,13 @@ public class Generator {
 
         int color = 0;
 
-        while (!queue.isEmpty()) {
-            CoordinatesInfo origin = queue.poll();
+        while (!nextBlocks.isEmpty()) {
+            CoordinatesInfo origin = nextBlocks.poll();
 
             Set<CoordinatesInfo> surface = new HashSet<>();
             Set<CoordinatesInfo> edge = new HashSet<>();
 
-            set.remove(origin);
+            availableBlocks.remove(origin);
             surface.add(origin);
             edge.add(origin);
 
@@ -168,12 +168,10 @@ public class Generator {
             int prevCount = 0;
             int count = surface.size();
 
+            int foo = 1;
+
             while (prevCount != count && surface.size() < 200) {
-                Set<CoordinatesInfo> newEdge = new HashSet<>();
-
                 for (CoordinatesInfo coordinates : edge) {
-                    boolean changed = false;
-
                     for (int[] offset : offsets) {
                         int i = coordinates.i + offset[0];
                         int j = coordinates.j + offset[1];
@@ -184,40 +182,45 @@ public class Generator {
 
                         CoordinatesInfo neighbor = coordinatesInfos[i][j];
 
-                        if (!set.contains(neighbor)) {
+                        if (!availableBlocks.contains(neighbor)) {
                             continue;
                         }
 
-                        if (neighbor.getNormal().cross(normal).length() > 0.45) {
+                        if (neighbor.getNormal().cross(normal).length() > 0.5) {
                             continue;
                         }
 
-                        queue.remove(neighbor);
-                        set.remove(neighbor);
+                        nextBlocks.remove(neighbor);
+                        availableBlocks.remove(neighbor);
                         surface.add(neighbor);
-                        newEdge.add(neighbor);
-                        changed = true;
                     }
-
-                    if (changed) {
-                        continue;
-                    }
-
-                    newEdge.add(coordinates);
                 }
 
-                edge = newEdge;
-
+                edge = new HashSet<>();
                 normal = new Vec(0);
 
                 for (CoordinatesInfo coordinates : surface) {
                     normal = normal.add(coordinates.getNormal());
+
+                    for (int[] offset : offsets) {
+                        int i = coordinates.i + offset[0];
+                        int j = coordinates.j + offset[1];
+
+                        CoordinatesInfo neighbor = coordinatesInfos[i][j];
+
+                        if (!surface.contains(neighbor)) {
+                            edge.add(coordinates);
+                            break;
+                        }
+                    }
                 }
 
                 normal = normal.div(surface.size());
 
                 prevCount = count;
                 count = surface.size();
+
+                foo++;
             }
 
             if (surface.size() < 200) {
@@ -226,12 +229,8 @@ public class Generator {
 
             TerrainSurface node = new TerrainSurface(normal, surface, coordinatesInfos);
 
-            for (CoordinatesInfo coordinates : node.getEdge()) {
-                world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
-            }
-
-            for (int i = 0; i < 5; i++) {
-                world.setBlockState(node.getNormal().mul(i).add(node.getOrigin().getTerrainBlock()).block(), Blocks.REDSTONE_BLOCK.getDefaultState());
+            for (CoordinatesInfo c : edge) {
+                world.setBlockState(c.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
             }
 
             color++;
