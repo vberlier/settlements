@@ -10,7 +10,7 @@ public class TerrainSurface {
     private final Vec normal;
     private final CoordinatesInfo[] surfaceCoordinates;
     private final CoordinatesInfo[][] terrainCoordinates;
-    private final Set<CoordinatesInfo> edge;
+    private final Set<CoordinatesInfo> hull;
     private Vec center;
     private int minI;
     private int minJ;
@@ -23,8 +23,8 @@ public class TerrainSurface {
         this.surfaceCoordinates = surfaceCoordinates.toArray(new CoordinatesInfo[0]);
         this.terrainCoordinates = terrainCoordinates;
 
-        edge = new HashSet<>();
-        computeEdge();
+        hull = new HashSet<>();
+        computeConvexHull();
 
         CoordinatesInfo first = this.surfaceCoordinates[0];
 
@@ -33,7 +33,7 @@ public class TerrainSurface {
 
         center = new Vec(0);
 
-        for (CoordinatesInfo coordinates : edge) {
+        for (CoordinatesInfo coordinates : hull) {
             center = center.add(coordinates.getTerrainBlock());
 
             minI = Math.min(minI, coordinates.i);
@@ -42,7 +42,7 @@ public class TerrainSurface {
             maxJ = Math.max(maxJ, coordinates.j);
         }
 
-        center = center.div(edge.size());
+        center = center.div(hull.size());
 
         origin = terrainCoordinates[(minI + maxI) / 2][(minJ + maxJ) / 2];
     }
@@ -59,7 +59,7 @@ public class TerrainSurface {
         }
     }
 
-    private void computeEdge() {
+    private void computeConvexHull() {
         if (surfaceCoordinates.length < 3) {
             return;
         }
@@ -104,7 +104,7 @@ public class TerrainSurface {
         double err = (dx > dy ? dx : -dy) / 2;
 
         while (true) {
-            edge.add(terrainCoordinates[(int) x0][(int) y0]);
+            hull.add(terrainCoordinates[(int) x0][(int) y0]);
 
             if (x0 == x1 && y0 == y1) {
                 break;
@@ -140,7 +140,7 @@ public class TerrainSurface {
         return surfaceCoordinates;
     }
 
-    public Set<CoordinatesInfo> getEdge() {
-        return edge;
+    public Set<CoordinatesInfo> getHull() {
+        return hull;
     }
 }
