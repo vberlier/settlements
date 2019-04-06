@@ -4,15 +4,20 @@ import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockColored;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 
+import java.util.HashSet;
 import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 
 public class Generator {
     private final World world;
@@ -31,7 +36,7 @@ public class Generator {
     private final Vec[][] normals;
     private final Vec origin;
     private final Vec center;
-    private final MutableValueGraph<CoordinatesInfo, Integer> graph;
+    private final MutableValueGraph<TerrainSurface, Integer> graph;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -133,21 +138,104 @@ public class Generator {
     }
 
     private void computeNodes() {
-        PriorityQueue<CoordinatesInfo> queue = new PriorityQueue<>();
+        Queue<CoordinatesInfo> queue = new PriorityQueue<>();
+        Set<CoordinatesInfo> set = new HashSet<>();
 
         for (int i = 1; i < sizeX - 1; i++) {
             for (int j = 1; j < sizeZ - 1; j++) {
-                queue.add(coordinatesInfos[i][j]);
+                CoordinatesInfo coordinates = coordinatesInfos[i][j];
+                queue.add(coordinates);
+                set.add(coordinates);
             }
         }
 
-        int i = 0;
+        int[][] offsets = new int[][]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+
+        int color = 0;
 
         while (!queue.isEmpty()) {
-            CoordinatesInfo coordinates = queue.poll();
-            BlockPos pos = coordinates.getTerrainBlock();
-            world.setBlockState(new BlockPos(pos.getX(), i * (120 - boundingBox.maxY) / (sizeX * sizeZ) + boundingBox.maxY, pos.getZ()), Blocks.STAINED_GLASS.getDefaultState());
-            i++;
+            CoordinatesInfo origin = queue.poll();
+
+            Set<CoordinatesInfo> surface = new HashSet<>();
+            Set<CoordinatesInfo> edge = new HashSet<>();
+
+            set.remove(origin);
+            surface.add(origin);
+            edge.add(origin);
+
+            Vec normal = origin.getNormal();
+
+            int prevCount = 0;
+            int count = surface.size();
+
+            while (prevCount != count && surface.size() < 200) {
+                Set<CoordinatesInfo> newEdge = new HashSet<>();
+
+                for (CoordinatesInfo coordinates : edge) {
+                    boolean changed = false;
+
+                    for (int[] offset : offsets) {
+                        int i = coordinates.i + offset[0];
+                        int j = coordinates.j + offset[1];
+
+                        if (i < 1 || i >= sizeX - 1 || j < 1 || j >= sizeZ - 1) {
+                            continue;
+                        }
+
+                        CoordinatesInfo neighbor = coordinatesInfos[i][j];
+
+                        if (!set.contains(neighbor)) {
+                            continue;
+                        }
+
+                        if (neighbor.getNormal().cross(normal).length() > 0.45) {
+                            continue;
+                        }
+
+                        queue.remove(neighbor);
+                        set.remove(neighbor);
+                        surface.add(neighbor);
+                        newEdge.add(neighbor);
+                        changed = true;
+                    }
+
+                    if (changed) {
+                        continue;
+                    }
+
+                    newEdge.add(coordinates);
+                }
+
+                edge = newEdge;
+
+                normal = new Vec(0);
+
+                for (CoordinatesInfo coordinates : surface) {
+                    normal = normal.add(coordinates.getNormal());
+                }
+
+                normal = normal.div(surface.size());
+
+                prevCount = count;
+                count = surface.size();
+            }
+
+            if (surface.size() < 200) {
+                continue;
+            }
+
+            TerrainSurface node = new TerrainSurface(normal, surface, coordinatesInfos);
+
+            for (CoordinatesInfo coordinates : node.getEdge()) {
+                world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
+            }
+
+            for (int i = 0; i < 5; i++) {
+                world.setBlockState(node.getNormal().mul(i).add(node.getOrigin().getTerrainBlock()).block(), Blocks.REDSTONE_BLOCK.getDefaultState());
+            }
+
+            color++;
+            color %= 16;
         }
     }
 }
