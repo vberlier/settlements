@@ -8,8 +8,8 @@ import java.util.*;
 
 public class Slot {
     private final Position[] surface;
-    private final Position[] edge;
     private final Position[][] terrain;
+    private final Position[] edge;
     private Vec normal;
     private Vec middle;
     private Set<Position> liquidBlocks;
@@ -24,10 +24,10 @@ public class Slot {
     private Position center;
     private final Set<Position> convexHull;
 
-    public Slot(Collection<Position> surface, Collection<Position> edge, Position[][] terrain) {
+    public Slot(Collection<Position> surface, Position[][] terrain) {
         this.surface = surface.toArray(new Position[0]);
-        this.edge = edge.toArray(new Position[0]);
         this.terrain = terrain;
+        edge = computeEdge(surface, terrain).toArray(new Position[0]);
 
         Position first = this.surface[0];
 
@@ -71,6 +71,26 @@ public class Slot {
 
         convexHull = new HashSet<>();
         computeConvexHull();
+    }
+
+    public static Set<Position> computeEdge(Collection<Position> surface, Position[][] terrain) {
+        Set<Position> edge = new HashSet<>();
+
+        for (Position pos : surface) {
+            for (int[] offset : Position.neighbors) {
+                int i = pos.i + offset[0];
+                int j = pos.j + offset[1];
+
+                Position neighbor = terrain[i][j];
+
+                if (!surface.contains(neighbor)) {
+                    edge.add(pos);
+                    break;
+                }
+            }
+        }
+
+        return edge;
     }
 
     private int orientation(Position c1, Position c2, Position c3) {
@@ -141,19 +161,6 @@ public class Slot {
         return center;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Slot that = (Slot) o;
-        return center.equals(that.center);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(center);
-    }
-
     public Position[] getEdge() {
         return edge;
     }
@@ -188,5 +195,18 @@ public class Slot {
 
     public Set<Position> getVegetationBlocks() {
         return vegetationBlocks;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Slot that = (Slot) o;
+        return center.equals(that.center);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(center);
     }
 }

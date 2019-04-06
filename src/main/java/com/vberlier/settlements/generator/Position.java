@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 public class Position implements Comparable<Position> {
+    public static final int[][] neighbors = new int[][]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+
     public final int i;
     public final int j;
     private BlockPos highestBlock;

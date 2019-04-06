@@ -1,10 +1,15 @@
 package com.vberlier.settlements.generator;
 
+import com.google.common.graph.EndpointPair;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
+import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockColored;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -38,6 +43,7 @@ public class Generator {
     private int slotSize = 300;
     private double slotFlexibility = 0.45;
     private double normalConnectivity = 6;
+    private double safeSlotRadius = 0.75 * Math.sqrt(slotSize / Math.PI);
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -155,17 +161,15 @@ public class Generator {
             }
         }
 
-        int[][] offsets = new int[][]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
-
         while (!nextBlocks.isEmpty()) {
             Position origin = nextBlocks.poll();
 
             Set<Position> surface = new HashSet<>();
-            Set<Position> edge = new HashSet<>();
 
             availableBlocks.remove(origin);
             surface.add(origin);
-            edge.add(origin);
+
+            Set<Position> edge = Slot.computeEdge(surface, positions);
 
             Vec normal = origin.getNormal();
 
@@ -174,7 +178,7 @@ public class Generator {
 
             while (prevCount != count && surface.size() < slotSize) {
                 for (Position coordinates : edge) {
-                    for (int[] offset : offsets) {
+                    for (int[] offset : Position.neighbors) {
                         int i = coordinates.i + offset[0];
                         int j = coordinates.j + offset[1];
 
@@ -198,23 +202,11 @@ public class Generator {
                     }
                 }
 
-                edge = new HashSet<>();
+                edge = Slot.computeEdge(surface, positions);
                 normal = new Vec(0);
 
                 for (Position coordinates : surface) {
                     normal = normal.add(coordinates.getNormal());
-
-                    for (int[] offset : offsets) {
-                        int i = coordinates.i + offset[0];
-                        int j = coordinates.j + offset[1];
-
-                        Position neighbor = positions[i][j];
-
-                        if (!surface.contains(neighbor)) {
-                            edge.add(coordinates);
-                            break;
-                        }
-                    }
                 }
 
                 normal = normal.div(surface.size());
@@ -227,39 +219,85 @@ public class Generator {
                 continue;
             }
 
-            Slot node = new Slot(surface, edge, positions);
+            Slot node = new Slot(surface, positions);
             graph.addNode(node);
         }
 
         for (Slot node : graph.nodes()) {
-            Vec modifier = node.getNormal().mul(normalConnectivity);
-            int normalOffsetI = (int) Math.round(modifier.x);
-            int normalOffsetJ = (int) Math.round(modifier.z);
+            connectNeighbors(node);
+        }
+    }
 
-            for (Position coordinates : node.getConvexHull()) {
-                Slot neighbor = coordinates.getSurface();
+    private void connectNeighbors(Slot node) {
+        Vec modifier = node.getNormal().mul(normalConnectivity);
+        int normalOffsetI = (int) Math.round(modifier.x);
+        int normalOffsetJ = (int) Math.round(modifier.z);
 
-                if (neighbor != null && neighbor != node) {
-                    graph.putEdgeValue(node, neighbor, 1);
-                }
+        for (Position coordinates : node.getConvexHull()) {
+            Slot neighbor = coordinates.getSurface();
 
-                int i = coordinates.i + normalOffsetI;
-                int j = coordinates.j + normalOffsetJ;
+            if (neighbor != null && neighbor != node) {
+                graph.putEdgeValue(node, neighbor, 1);
+            }
 
-                if (i < 1 || i >= sizeX - 1 || j < 1 || j >= sizeZ - 1) {
-                    continue;
-                }
+            int i = coordinates.i + normalOffsetI;
+            int j = coordinates.j + normalOffsetJ;
 
-                neighbor = positions[i][j].getSurface();
+            if (i < 1 || i >= sizeX - 1 || j < 1 || j >= sizeZ - 1) {
+                continue;
+            }
 
-                if (neighbor != null && neighbor != node) {
-                    graph.putEdgeValue(node, neighbor, 2);
-                }
+            neighbor = positions[i][j].getSurface();
+
+            if (neighbor != null && neighbor != node) {
+                graph.putEdgeValue(node, neighbor, 2);
             }
         }
     }
 
     private void processSlotGraph() {
+        double minEdgeLength = 2 * safeSlotRadius;
+
+        boolean changed = true;
+
+        while (changed) {
+            changed = false;
+
+            for (EndpointPair<Slot> edge : graph.edges()) {
+                Slot first = edge.nodeU();
+                Slot second = edge.nodeV();
+
+                Position pos1 = first.getCenter();
+                Position pos2 = second.getCenter();
+
+                double distance = new Vec(pos1.getTerrainBlock()).sub(pos2.getTerrainBlock()).length();
+
+                if (distance < minEdgeLength) {
+                    for (Point point : new Point(pos1).line(pos2)) {
+                        world.setBlockState(positions[(int) point.x][(int) point.y].getTerrainBlock().add(0, 1, 0), Blocks.BEDROCK.getDefaultState());
+                    }
+
+//                    changed = true;
+                }
+            }
+        }
+
+        int color = 0;
+
+        for (Slot node : graph.nodes()) {
+            for (Position position : node.getSurface()) {
+                world.setBlockState(position.getTerrainBlock(), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
+            }
+
+            color++;
+            color %= 16;
+        }
+
+        for (EndpointPair<Slot> edge : graph.edges()) {
+            for (Point point : new Point(edge.nodeU().getCenter()).line(edge.nodeV().getCenter())) {
+                world.setBlockState(positions[(int) point.x][(int) point.y].getTerrainBlock(), Blocks.IRON_BLOCK.getDefaultState());
+            }
+        }
     }
 
     public int getSlotSize() {
