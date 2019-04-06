@@ -78,7 +78,7 @@ public class Generator {
         computeMaps();
         computeVertices();
         computeNormals();
-        computeNodes();
+        computeSurfaces();
     }
 
     private void computeMaps() {
@@ -137,7 +137,7 @@ public class Generator {
         }
     }
 
-    private void computeNodes() {
+    private void computeSurfaces() {
         Queue<CoordinatesInfo> nextBlocks = new PriorityQueue<>();
         Set<CoordinatesInfo> availableBlocks = new HashSet<>();
 

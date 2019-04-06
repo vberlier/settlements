@@ -13,6 +13,7 @@ public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
     private boolean containsLiquids = false;
     private Vec normal;
     private double distanceFromCenter = 0;
+    private TerrainSurface surface;
 
     public CoordinatesInfo(int i, int j, BlockPos highestBlock) {
         this.i = i;
@@ -107,5 +108,13 @@ public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
     @Override
     public int hashCode() {
         return Objects.hash(i, j);
+    }
+
+    public TerrainSurface getSurface() {
+        return surface;
+    }
+
+    public void setSurface(TerrainSurface surface) {
+        this.surface = surface;
     }
 }

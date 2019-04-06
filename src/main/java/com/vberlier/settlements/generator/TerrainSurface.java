@@ -13,7 +13,6 @@ public class TerrainSurface {
     private final CoordinatesInfo[] surfaceCoordinates;
     private final CoordinatesInfo[] edge;
     private final CoordinatesInfo[][] terrainCoordinates;
-    private final Set<CoordinatesInfo> hull;
     private Vec middle;
     private int minI;
     private int minJ;
@@ -23,15 +22,13 @@ public class TerrainSurface {
     private int height;
     private CoordinatesInfo origin;
     private CoordinatesInfo center;
+    private final Set<CoordinatesInfo> hull;
 
     public TerrainSurface(Vec normal, Collection<CoordinatesInfo> surfaceCoordinates, Collection<CoordinatesInfo> edge, CoordinatesInfo[][] terrainCoordinates) {
         this.normal = normal;
         this.surfaceCoordinates = surfaceCoordinates.toArray(new CoordinatesInfo[0]);
         this.edge = edge.toArray(new CoordinatesInfo[0]);
         this.terrainCoordinates = terrainCoordinates;
-
-        hull = new HashSet<>();
-        computeConvexHull();
 
         CoordinatesInfo first = this.surfaceCoordinates[0];
 
@@ -40,7 +37,9 @@ public class TerrainSurface {
 
         middle = new Vec(0);
 
-        for (CoordinatesInfo coordinates : hull) {
+        for (CoordinatesInfo coordinates : surfaceCoordinates) {
+            coordinates.setSurface(this);
+
             middle = middle.add(coordinates.getTerrainBlock());
 
             minI = Math.min(minI, coordinates.i);
@@ -49,7 +48,7 @@ public class TerrainSurface {
             maxJ = Math.max(maxJ, coordinates.j);
         }
 
-        middle = middle.div(hull.size());
+        middle = middle.div(surfaceCoordinates.size());
 
         width = maxI - minI;
         height = maxJ - minJ;
@@ -58,6 +57,9 @@ public class TerrainSurface {
         BlockPos originBlock = origin.getTerrainBlock();
 
         center = terrainCoordinates[(int) (middle.x - originBlock.getX() + minI)][(int) (middle.z - originBlock.getZ() + minJ)];
+
+        hull = new HashSet<>();
+        computeConvexHull();
     }
 
     private int orientation(CoordinatesInfo c1, CoordinatesInfo c2, CoordinatesInfo c3) {
@@ -73,14 +75,14 @@ public class TerrainSurface {
     }
 
     private void computeConvexHull() {
-        if (surfaceCoordinates.length < 3) {
+        if (edge.length < 3) {
             return;
         }
 
         int leftmost = 0;
 
-        for (int i = 1; i < surfaceCoordinates.length; i++) {
-            if (surfaceCoordinates[i].i < surfaceCoordinates[leftmost].i) {
+        for (int i = 1; i < edge.length; i++) {
+            if (edge[i].i < edge[leftmost].i) {
                 leftmost = i;
             }
         }
@@ -88,15 +90,15 @@ public class TerrainSurface {
         int p = leftmost;
 
         do {
-            int q = (p + 1) % surfaceCoordinates.length;
+            int q = (p + 1) % edge.length;
 
-            for (int i = 0; i < surfaceCoordinates.length; i++) {
-                if (orientation(surfaceCoordinates[p], surfaceCoordinates[i], surfaceCoordinates[q]) == 2) {
+            for (int i = 0; i < edge.length; i++) {
+                if (orientation(edge[p], edge[i], edge[q]) == 2) {
                     q = i;
                 }
             }
 
-            edgeLine(surfaceCoordinates[p], surfaceCoordinates[q]);
+            edgeLine(edge[p], edge[q]);
 
             p = q;
         } while (p != leftmost);
