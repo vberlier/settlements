@@ -1,7 +1,9 @@
 package com.vberlier.settlements.generator;
 
 import com.vberlier.settlements.util.Vec;
+import net.minecraft.util.math.BlockPos;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -9,18 +11,23 @@ import java.util.Set;
 public class TerrainSurface {
     private final Vec normal;
     private final CoordinatesInfo[] surfaceCoordinates;
+    private final CoordinatesInfo[] edge;
     private final CoordinatesInfo[][] terrainCoordinates;
     private final Set<CoordinatesInfo> hull;
-    private Vec center;
+    private Vec middle;
     private int minI;
     private int minJ;
     private int maxI;
     private int maxJ;
+    private int width;
+    private int height;
     private CoordinatesInfo origin;
+    private CoordinatesInfo center;
 
-    public TerrainSurface(Vec normal, Collection<CoordinatesInfo> surfaceCoordinates, CoordinatesInfo[][] terrainCoordinates) {
+    public TerrainSurface(Vec normal, Collection<CoordinatesInfo> surfaceCoordinates, Collection<CoordinatesInfo> edge, CoordinatesInfo[][] terrainCoordinates) {
         this.normal = normal;
         this.surfaceCoordinates = surfaceCoordinates.toArray(new CoordinatesInfo[0]);
+        this.edge = edge.toArray(new CoordinatesInfo[0]);
         this.terrainCoordinates = terrainCoordinates;
 
         hull = new HashSet<>();
@@ -31,10 +38,10 @@ public class TerrainSurface {
         minI = maxI = first.i;
         minJ = maxJ = first.j;
 
-        center = new Vec(0);
+        middle = new Vec(0);
 
         for (CoordinatesInfo coordinates : hull) {
-            center = center.add(coordinates.getTerrainBlock());
+            middle = middle.add(coordinates.getTerrainBlock());
 
             minI = Math.min(minI, coordinates.i);
             minJ = Math.min(minJ, coordinates.j);
@@ -42,9 +49,15 @@ public class TerrainSurface {
             maxJ = Math.max(maxJ, coordinates.j);
         }
 
-        center = center.div(hull.size());
+        middle = middle.div(hull.size());
 
-        origin = terrainCoordinates[(minI + maxI) / 2][(minJ + maxJ) / 2];
+        width = maxI - minI;
+        height = maxJ - minJ;
+
+        origin = terrainCoordinates[minI][minJ];
+        BlockPos originBlock = origin.getTerrainBlock();
+
+        center = terrainCoordinates[(int) (middle.x - originBlock.getX() + minI)][(int) (middle.z - originBlock.getZ() + minJ)];
     }
 
     private int orientation(CoordinatesInfo c1, CoordinatesInfo c2, CoordinatesInfo c3) {
@@ -124,8 +137,8 @@ public class TerrainSurface {
         }
     }
 
-    public Vec getCenter() {
-        return center;
+    public Vec getMiddle() {
+        return middle;
     }
 
     public CoordinatesInfo getOrigin() {
@@ -142,5 +155,9 @@ public class TerrainSurface {
 
     public Set<CoordinatesInfo> getHull() {
         return hull;
+    }
+
+    public CoordinatesInfo getCenter() {
+        return center;
     }
 }

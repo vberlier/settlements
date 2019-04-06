@@ -223,11 +223,13 @@ public class Generator {
                 continue;
             }
 
-            TerrainSurface node = new TerrainSurface(normal, surface, coordinatesInfos);
+            TerrainSurface node = new TerrainSurface(normal, surface, edge, coordinatesInfos);
 
             for (CoordinatesInfo c : edge) {
                 world.setBlockState(c.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
             }
+
+            world.setBlockState(node.getCenter().getTerrainBlock().add(0, 1, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
 
             color++;
             color %= 16;
