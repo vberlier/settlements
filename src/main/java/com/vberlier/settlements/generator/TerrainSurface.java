@@ -1,12 +1,10 @@
 package com.vberlier.settlements.generator;
 
+import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class TerrainSurface {
     private final Vec normal;
@@ -22,7 +20,7 @@ public class TerrainSurface {
     private int height;
     private CoordinatesInfo origin;
     private CoordinatesInfo center;
-    private final Set<CoordinatesInfo> hull;
+    private final Set<CoordinatesInfo> convexHull;
 
     public TerrainSurface(Vec normal, Collection<CoordinatesInfo> surfaceCoordinates, Collection<CoordinatesInfo> edge, CoordinatesInfo[][] terrainCoordinates) {
         this.normal = normal;
@@ -58,7 +56,7 @@ public class TerrainSurface {
 
         center = terrainCoordinates[(int) (middle.x - originBlock.getX() + minI)][(int) (middle.z - originBlock.getZ() + minJ)];
 
-        hull = new HashSet<>();
+        convexHull = new HashSet<>();
         computeConvexHull();
     }
 
@@ -98,45 +96,12 @@ public class TerrainSurface {
                 }
             }
 
-            edgeLine(edge[p], edge[q]);
+            for (Point point : new Point(edge[p]).line(edge[q])) {
+                convexHull.add(terrainCoordinates[(int) point.x][(int) point.y]);
+            }
 
             p = q;
         } while (p != leftmost);
-    }
-
-    private void edgeLine(CoordinatesInfo origin, CoordinatesInfo endpoint) {
-        double x0 = origin.i;
-        double y0 = origin.j;
-        double x1 = endpoint.i;
-        double y1 = endpoint.j;
-
-        double dx = Math.abs(x1 - x0);
-        double dy = Math.abs(y1 - y0);
-
-        double sx = x0 < x1 ? 1 : -1;
-        double sy = y0 < y1 ? 1 : -1;
-
-        double err = (dx > dy ? dx : -dy) / 2;
-
-        while (true) {
-            hull.add(terrainCoordinates[(int) x0][(int) y0]);
-
-            if (x0 == x1 && y0 == y1) {
-                break;
-            }
-
-            double e2 = err;
-
-            if (e2 > -dx) {
-                err -= dy;
-                x0 += sx;
-            }
-
-            if (e2 < dy) {
-                err += dx;
-                y0 += sy;
-            }
-        }
     }
 
     public Vec getMiddle() {
@@ -155,11 +120,52 @@ public class TerrainSurface {
         return surfaceCoordinates;
     }
 
-    public Set<CoordinatesInfo> getHull() {
-        return hull;
+    public Set<CoordinatesInfo> getConvexHull() {
+        return convexHull;
     }
 
     public CoordinatesInfo getCenter() {
         return center;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TerrainSurface that = (TerrainSurface) o;
+        return center.equals(that.center);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(center);
+    }
+
+    public CoordinatesInfo[] getEdge() {
+        return edge;
+    }
+
+    public int getMinI() {
+        return minI;
+    }
+
+    public int getMinJ() {
+        return minJ;
+    }
+
+    public int getMaxI() {
+        return maxI;
+    }
+
+    public int getMaxJ() {
+        return maxJ;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

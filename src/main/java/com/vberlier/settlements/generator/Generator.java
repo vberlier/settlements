@@ -1,7 +1,9 @@
 package com.vberlier.settlements.generator;
 
+import com.google.common.graph.EndpointPair;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
+import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockColored;
@@ -78,7 +80,7 @@ public class Generator {
         computeMaps();
         computeVertices();
         computeNormals();
-        computeSurfaces();
+        computeSurfaceGraph();
     }
 
     private void computeMaps() {
@@ -137,7 +139,7 @@ public class Generator {
         }
     }
 
-    private void computeSurfaces() {
+    private void computeSurfaceGraph() {
         Queue<CoordinatesInfo> nextBlocks = new PriorityQueue<>();
         Set<CoordinatesInfo> availableBlocks = new HashSet<>();
 
@@ -150,8 +152,6 @@ public class Generator {
         }
 
         int[][] offsets = new int[][]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
-
-        int color = 0;
 
         while (!nextBlocks.isEmpty()) {
             CoordinatesInfo origin = nextBlocks.poll();
@@ -224,15 +224,34 @@ public class Generator {
             }
 
             TerrainSurface node = new TerrainSurface(normal, surface, edge, coordinatesInfos);
+            graph.addNode(node);
+        }
 
-            for (CoordinatesInfo c : edge) {
-                world.setBlockState(c.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
+        int color = 0;
+
+        for (TerrainSurface node : graph.nodes()) {
+            for (CoordinatesInfo coordinates : node.getConvexHull()) {
+                TerrainSurface neighbor = coordinates.getSurface();
+
+                if (neighbor != null && neighbor != node) {
+                    graph.putEdgeValue(node, neighbor, 1);
+                }
             }
 
-            world.setBlockState(node.getCenter().getTerrainBlock().add(0, 1, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
+            for (CoordinatesInfo coordinates : node.getEdge()) {
+                world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
+            }
 
             color++;
-            color %= 16;
+        }
+
+        for (EndpointPair<TerrainSurface> nodes : graph.edges()) {
+            CoordinatesInfo first = nodes.nodeU().getCenter();
+            CoordinatesInfo second = nodes.nodeV().getCenter();
+
+            for (Point point : new Point(first).line(second)) {
+                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 1, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
+            }
         }
     }
 }
