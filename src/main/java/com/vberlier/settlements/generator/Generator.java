@@ -16,10 +16,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 
-import java.util.HashSet;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Generator {
     private final World world;
@@ -86,7 +85,9 @@ public class Generator {
         computeVertices();
         computeNormals();
         computeSlotGraph();
-        processSlotGraph();
+        removeShortEdges();
+
+        debugGraph();
     }
 
     private void computeMaps() {
@@ -255,7 +256,7 @@ public class Generator {
         }
     }
 
-    private void processSlotGraph() {
+    private void removeShortEdges() {
         double minEdgeLength = 2 * safeSlotRadius;
 
         boolean changed = true;
@@ -273,20 +274,27 @@ public class Generator {
                 double distance = new Vec(pos1.getTerrainBlock()).sub(pos2.getTerrainBlock()).length();
 
                 if (distance < minEdgeLength) {
-                    for (Point point : new Point(pos1).line(pos2)) {
-                        world.setBlockState(positions[(int) point.x][(int) point.y].getTerrainBlock().add(0, 1, 0), Blocks.BEDROCK.getDefaultState());
-                    }
+                    graph.removeNode(first);
+                    graph.removeNode(second);
 
-//                    changed = true;
+                    Slot midpoint = new Slot(Stream.concat(Arrays.stream(first.getSurface()), Arrays.stream(second.getSurface())).collect(Collectors.toList()), positions);
+                    graph.addNode(midpoint);
+                    connectNeighbors(midpoint);
+
+                    changed = true;
+
+                    break;
                 }
             }
         }
+    }
 
+    private void debugGraph() {
         int color = 0;
 
         for (Slot node : graph.nodes()) {
             for (Position position : node.getSurface()) {
-                world.setBlockState(position.getTerrainBlock(), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
+                world.setBlockState(position.getTerrainBlock(), Blocks.STAINED_GLASS.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color)));
             }
 
             color++;
