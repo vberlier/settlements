@@ -41,7 +41,7 @@ public class Generator {
 
     private int slotSize = 300;
     private double slotFlexibility = 0.45;
-    private double normalConnectivity = 6;
+    private double normalConnectivity = 16;
     private double safeSlotRadius = 0.75 * Math.sqrt(slotSize / Math.PI);
 
     public Generator(World world, StructureBoundingBox boundingBox) {
@@ -86,6 +86,7 @@ public class Generator {
         computeNormals();
         computeSlotGraph();
         removeShortEdges();
+        removeTriangles();
 
         debugGraph();
     }
@@ -283,6 +284,36 @@ public class Generator {
 
                     changed = true;
 
+                    break;
+                }
+            }
+        }
+    }
+
+    private void removeTriangles() {
+        boolean changed = true;
+
+        while (changed) {
+            changed = false;
+
+            for (EndpointPair<Slot> edge : graph.edges()) {
+                Slot first = edge.nodeU();
+                Slot second = edge.nodeV();
+
+                boolean foundOtherEdge = false;
+
+                for (Slot node : graph.adjacentNodes(first)) {
+                    if (graph.adjacentNodes(node).contains(second)) {
+                        foundOtherEdge = true;
+
+                        graph.removeEdge(first, second);
+                        changed = true;
+
+                        break;
+                    }
+                }
+
+                if (foundOtherEdge) {
                     break;
                 }
             }
