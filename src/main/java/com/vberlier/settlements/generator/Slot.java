@@ -6,11 +6,11 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 
-public class TerrainSurface {
+public class Slot {
     private final Vec normal;
-    private final CoordinatesInfo[] surfaceCoordinates;
-    private final CoordinatesInfo[] edge;
-    private final CoordinatesInfo[][] terrainCoordinates;
+    private final Position[] surfaceCoordinates;
+    private final Position[] edge;
+    private final Position[][] terrainCoordinates;
     private Vec middle;
     private int minI;
     private int minJ;
@@ -18,24 +18,24 @@ public class TerrainSurface {
     private int maxJ;
     private int width;
     private int height;
-    private CoordinatesInfo origin;
-    private CoordinatesInfo center;
-    private final Set<CoordinatesInfo> convexHull;
+    private Position origin;
+    private Position center;
+    private final Set<Position> convexHull;
 
-    public TerrainSurface(Vec normal, Collection<CoordinatesInfo> surfaceCoordinates, Collection<CoordinatesInfo> edge, CoordinatesInfo[][] terrainCoordinates) {
+    public Slot(Vec normal, Collection<Position> surfaceCoordinates, Collection<Position> edge, Position[][] terrainCoordinates) {
         this.normal = normal;
-        this.surfaceCoordinates = surfaceCoordinates.toArray(new CoordinatesInfo[0]);
-        this.edge = edge.toArray(new CoordinatesInfo[0]);
+        this.surfaceCoordinates = surfaceCoordinates.toArray(new Position[0]);
+        this.edge = edge.toArray(new Position[0]);
         this.terrainCoordinates = terrainCoordinates;
 
-        CoordinatesInfo first = this.surfaceCoordinates[0];
+        Position first = this.surfaceCoordinates[0];
 
         minI = maxI = first.i;
         minJ = maxJ = first.j;
 
         middle = new Vec(0);
 
-        for (CoordinatesInfo coordinates : surfaceCoordinates) {
+        for (Position coordinates : surfaceCoordinates) {
             coordinates.setSurface(this);
 
             middle = middle.add(coordinates.getTerrainBlock());
@@ -60,7 +60,7 @@ public class TerrainSurface {
         computeConvexHull();
     }
 
-    private int orientation(CoordinatesInfo c1, CoordinatesInfo c2, CoordinatesInfo c3) {
+    private int orientation(Position c1, Position c2, Position c3) {
         int val = (c2.j - c1.j) * (c3.i - c2.i) - (c2.i - c1.i) * (c3.j - c2.j);
 
         if (val == 0) {
@@ -108,7 +108,7 @@ public class TerrainSurface {
         return middle;
     }
 
-    public CoordinatesInfo getOrigin() {
+    public Position getOrigin() {
         return origin;
     }
 
@@ -116,15 +116,15 @@ public class TerrainSurface {
         return normal;
     }
 
-    public CoordinatesInfo[] getSurfaceCoordinates() {
+    public Position[] getSurfaceCoordinates() {
         return surfaceCoordinates;
     }
 
-    public Set<CoordinatesInfo> getConvexHull() {
+    public Set<Position> getConvexHull() {
         return convexHull;
     }
 
-    public CoordinatesInfo getCenter() {
+    public Position getCenter() {
         return center;
     }
 
@@ -132,7 +132,7 @@ public class TerrainSurface {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TerrainSurface that = (TerrainSurface) o;
+        Slot that = (Slot) o;
         return center.equals(that.center);
     }
 
@@ -141,7 +141,7 @@ public class TerrainSurface {
         return Objects.hash(center);
     }
 
-    public CoordinatesInfo[] getEdge() {
+    public Position[] getEdge() {
         return edge;
     }
 

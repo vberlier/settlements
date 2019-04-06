@@ -1,6 +1,6 @@
 package com.vberlier.settlements.util;
 
-import com.vberlier.settlements.generator.CoordinatesInfo;
+import com.vberlier.settlements.generator.Position;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -9,7 +9,7 @@ public class Point implements Comparable<Point> {
     public final double x;
     public final double y;
 
-    public Point(CoordinatesInfo coordinates) {
+    public Point(Position coordinates) {
         this(coordinates.i, coordinates.j);
     }
 
@@ -22,7 +22,7 @@ public class Point implements Comparable<Point> {
         this.y = y;
     }
 
-    public ArrayList<Point> line(CoordinatesInfo other) {
+    public ArrayList<Point> line(Position other) {
         return line(new Point(other));
     }
 

@@ -5,7 +5,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Objects;
 
-public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
+public class Position implements Comparable<Position> {
     public final int i;
     public final int j;
     private BlockPos highestBlock;
@@ -13,9 +13,9 @@ public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
     private boolean containsLiquids = false;
     private Vec normal;
     private double distanceFromCenter = 0;
-    private TerrainSurface surface;
+    private Slot surface;
 
-    public CoordinatesInfo(int i, int j, BlockPos highestBlock) {
+    public Position(int i, int j, BlockPos highestBlock) {
         this.i = i;
         this.j = j;
         this.highestBlock = highestBlock;
@@ -72,7 +72,7 @@ public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
     }
 
     @Override
-    public int compareTo(CoordinatesInfo o) {
+    public int compareTo(Position o) {
         int res = Boolean.compare(containsLiquids, o.containsLiquids);
         if (res != 0) {
             return res;
@@ -100,7 +100,7 @@ public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CoordinatesInfo that = (CoordinatesInfo) o;
+        Position that = (Position) o;
         return i == that.i &&
                 j == that.j;
     }
@@ -110,11 +110,11 @@ public class CoordinatesInfo implements Comparable<CoordinatesInfo> {
         return Objects.hash(i, j);
     }
 
-    public TerrainSurface getSurface() {
+    public Slot getSurface() {
         return surface;
     }
 
-    public void setSurface(TerrainSurface surface) {
+    public void setSurface(Slot surface) {
         this.surface = surface;
     }
 }

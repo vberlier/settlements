@@ -31,14 +31,17 @@ public class Generator {
     private final int[][] heights;
     private final BlockPos[][] heightMap;
     private final BlockPos[][] terrainMap;
-    private final CoordinatesInfo[][] coordinatesInfos;
+    private final Position[][] positions;
     private final int verticesSizeX;
     private final int verticesSizeZ;
     private final Vec[][] vertices;
     private final Vec[][] normals;
     private final Vec origin;
     private final Vec center;
-    private final MutableValueGraph<TerrainSurface, Integer> graph;
+    private final MutableValueGraph<Slot, Integer> graph;
+
+    private int slotSize = 300;
+    private double slotFlexibility = 0.45;
 
     public Generator(World world, StructureBoundingBox boundingBox) {
         this.world = world;
@@ -52,7 +55,7 @@ public class Generator {
         heights = new int[sizeX][sizeZ];
         heightMap = new BlockPos[sizeX][sizeZ];
         terrainMap = new BlockPos[sizeX][sizeZ];
-        coordinatesInfos = new CoordinatesInfo[sizeX][sizeZ];
+        positions = new Position[sizeX][sizeZ];
 
         verticesSizeX = sizeX - 1;
         verticesSizeZ = sizeZ - 1;
@@ -95,8 +98,8 @@ public class Generator {
                 BlockPos pos = new BlockPos(x, y, z);
                 heightMap[i][j] = pos;
 
-                CoordinatesInfo coordinates = new CoordinatesInfo(i, j, pos);
-                this.coordinatesInfos[i][j] = coordinates;
+                Position coordinates = new Position(i, j, pos);
+                this.positions[i][j] = coordinates;
 
                 coordinates.setDistanceFromCenter(center.sub(x, 0, z).length());
 
@@ -134,18 +137,18 @@ public class Generator {
             for (int j = 1; j < sizeZ - 1; j++) {
                 Vec normal = Vec.normal(vertices[i - 1][j - 1], vertices[i - 1][j], vertices[i][j], vertices[i][j - 1]).normalize();
                 normals[i][j] = normal;
-                coordinatesInfos[i][j].setNormal(normal);
+                positions[i][j].setNormal(normal);
             }
         }
     }
 
     private void computeSurfaceGraph() {
-        Queue<CoordinatesInfo> nextBlocks = new PriorityQueue<>();
-        Set<CoordinatesInfo> availableBlocks = new HashSet<>();
+        Queue<Position> nextBlocks = new PriorityQueue<>();
+        Set<Position> availableBlocks = new HashSet<>();
 
         for (int i = 1; i < sizeX - 1; i++) {
             for (int j = 1; j < sizeZ - 1; j++) {
-                CoordinatesInfo coordinates = coordinatesInfos[i][j];
+                Position coordinates = positions[i][j];
                 nextBlocks.add(coordinates);
                 availableBlocks.add(coordinates);
             }
@@ -154,10 +157,10 @@ public class Generator {
         int[][] offsets = new int[][]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
         while (!nextBlocks.isEmpty()) {
-            CoordinatesInfo origin = nextBlocks.poll();
+            Position origin = nextBlocks.poll();
 
-            Set<CoordinatesInfo> surface = new HashSet<>();
-            Set<CoordinatesInfo> edge = new HashSet<>();
+            Set<Position> surface = new HashSet<>();
+            Set<Position> edge = new HashSet<>();
 
             availableBlocks.remove(origin);
             surface.add(origin);
@@ -168,8 +171,8 @@ public class Generator {
             int prevCount = 0;
             int count = surface.size();
 
-            while (prevCount != count && surface.size() < 200) {
-                for (CoordinatesInfo coordinates : edge) {
+            while (prevCount != count && surface.size() < slotSize) {
+                for (Position coordinates : edge) {
                     for (int[] offset : offsets) {
                         int i = coordinates.i + offset[0];
                         int j = coordinates.j + offset[1];
@@ -178,13 +181,13 @@ public class Generator {
                             continue;
                         }
 
-                        CoordinatesInfo neighbor = coordinatesInfos[i][j];
+                        Position neighbor = positions[i][j];
 
                         if (!availableBlocks.contains(neighbor)) {
                             continue;
                         }
 
-                        if (neighbor.getNormal().cross(normal).length() > 0.5) {
+                        if (neighbor.getNormal().cross(normal).length() > slotFlexibility) {
                             continue;
                         }
 
@@ -197,14 +200,14 @@ public class Generator {
                 edge = new HashSet<>();
                 normal = new Vec(0);
 
-                for (CoordinatesInfo coordinates : surface) {
+                for (Position coordinates : surface) {
                     normal = normal.add(coordinates.getNormal());
 
                     for (int[] offset : offsets) {
                         int i = coordinates.i + offset[0];
                         int j = coordinates.j + offset[1];
 
-                        CoordinatesInfo neighbor = coordinatesInfos[i][j];
+                        Position neighbor = positions[i][j];
 
                         if (!surface.contains(neighbor)) {
                             edge.add(coordinates);
@@ -219,39 +222,55 @@ public class Generator {
                 count = surface.size();
             }
 
-            if (surface.size() < 200) {
+            if (surface.size() < slotSize) {
                 continue;
             }
 
-            TerrainSurface node = new TerrainSurface(normal, surface, edge, coordinatesInfos);
+            Slot node = new Slot(normal, surface, edge, positions);
             graph.addNode(node);
         }
 
         int color = 0;
 
-        for (TerrainSurface node : graph.nodes()) {
-            for (CoordinatesInfo coordinates : node.getConvexHull()) {
-                TerrainSurface neighbor = coordinates.getSurface();
+        for (Slot node : graph.nodes()) {
+            for (Position coordinates : node.getConvexHull()) {
+                Slot neighbor = coordinates.getSurface();
 
                 if (neighbor != null && neighbor != node) {
                     graph.putEdgeValue(node, neighbor, 1);
                 }
             }
 
-            for (CoordinatesInfo coordinates : node.getEdge()) {
-                world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.WOOL.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
+            for (Position coordinates : node.getSurfaceCoordinates()) {
+                world.setBlockState(coordinates.getTerrainBlock().add(0, 1, 0), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
             }
 
             color++;
         }
 
-        for (EndpointPair<TerrainSurface> nodes : graph.edges()) {
-            CoordinatesInfo first = nodes.nodeU().getCenter();
-            CoordinatesInfo second = nodes.nodeV().getCenter();
+        for (EndpointPair<Slot> nodes : graph.edges()) {
+            Position first = nodes.nodeU().getCenter();
+            Position second = nodes.nodeV().getCenter();
 
             for (Point point : new Point(first).line(second)) {
-                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 1, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
+                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 2, 0), Blocks.BEDROCK.getDefaultState());
             }
         }
+    }
+
+    public int getSlotSize() {
+        return slotSize;
+    }
+
+    public void setSlotSize(int slotSize) {
+        this.slotSize = slotSize;
+    }
+
+    public double getSlotFlexibility() {
+        return slotFlexibility;
+    }
+
+    public void setSlotFlexibility(double slotFlexibility) {
+        this.slotFlexibility = slotFlexibility;
     }
 }
