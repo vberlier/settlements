@@ -1,15 +1,10 @@
 package com.vberlier.settlements.generator;
 
-import com.google.common.graph.EndpointPair;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
-import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockColored;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
-import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -84,7 +79,8 @@ public class Generator {
         computeMaps();
         computeVertices();
         computeNormals();
-        computeSurfaceGraph();
+        computeSlotGraph();
+        processSlotGraph();
     }
 
     private void computeMaps() {
@@ -147,7 +143,7 @@ public class Generator {
         }
     }
 
-    private void computeSurfaceGraph() {
+    private void computeSlotGraph() {
         Queue<Position> nextBlocks = new PriorityQueue<>();
         Set<Position> availableBlocks = new HashSet<>();
 
@@ -235,8 +231,6 @@ public class Generator {
             graph.addNode(node);
         }
 
-        int color = 0;
-
         for (Slot node : graph.nodes()) {
             Vec modifier = node.getNormal().mul(normalConnectivity);
             int normalOffsetI = (int) Math.round(modifier.x);
@@ -262,40 +256,10 @@ public class Generator {
                     graph.putEdgeValue(node, neighbor, 2);
                 }
             }
-
-            for (Position coordinates : node.getSurface()) {
-                world.setBlockState(coordinates.getTerrainBlock(), Blocks.CONCRETE.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.byMetadata(color % 16)));
-            }
-
-            for (Position coordinates : node.getLiquidBlocks()) {
-                if (coordinates.containsLiquids()) {
-                    world.setBlockState(coordinates.getHighestBlock().add(0, 1, 0), Blocks.STAINED_GLASS.getDefaultState());
-                }
-            }
-
-            for (Position coordinates : node.getVegetationBlocks()) {
-                for (BlockPos pos : coordinates.getVegetation()) {
-                    world.setBlockState(pos, Blocks.STAINED_GLASS.getDefaultState().withProperty(BlockColored.COLOR, EnumDyeColor.LIME));
-                }
-            }
-
-            for (int i = 0; i < 6; i++) {
-                world.setBlockState(node.getNormal().mul(i).add(node.getCenter().getTerrainBlock()).block(), Blocks.IRON_BLOCK.getDefaultState());
-            }
-
-            color++;
         }
+    }
 
-        for (EndpointPair<Slot> edge : graph.edges()) {
-            Slot nodeU = edge.nodeU();
-            Slot nodeV = edge.nodeV();
-            Position first = nodeU.getCenter();
-            Position second = nodeV.getCenter();
-
-            for (Point point : new Point(first).line(second)) {
-                world.setBlockState(terrainMap[(int) point.x][(int) point.y].add(0, 1, 0), graph.edgeValue(nodeU, nodeV) == 2 ? Blocks.REDSTONE_BLOCK.getDefaultState() : Blocks.BEDROCK.getDefaultState());
-            }
-        }
+    private void processSlotGraph() {
     }
 
     public int getSlotSize() {
