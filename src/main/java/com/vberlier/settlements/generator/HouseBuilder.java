@@ -60,16 +60,16 @@ public class HouseBuilder {
         BlockPos baseSize = houseBase.getSize();
 
         StructureBoundingBox bb = spawnStructure(houseBase, centerBlock, orientation.rotation());
-        spawnAdjacent(bb, houseExtension, orientation.inverse().rotation());
+        spawnAdjacent(bb, houseSmallExtension, orientation.inverse().rotation());
+        bb = spawnAdjacent(bb, houseSmallExtension, extensionOrientation.rotation());
         bb = spawnAdjacent(bb, houseExtension, extensionOrientation.rotation());
-        bb = spawnAdjacent(bb, houseExtension, extensionOrientation.rotation());
-        spawnAdjacent(bb, houseExtension, orientation.rotation());
+        spawnAdjacent(bb, houseSmallExtension, orientation.rotation());
 
         bb = spawnStructure(houseBaseRoof, centerBlock.add(0, baseSize.getY() - 1, 0), orientation.rotation());
-        spawnAdjacent(bb, houseExtensionRoof, orientation.inverse().rotation(), 2);
+        spawnAdjacent(bb, houseSmallExtensionRoof, orientation.inverse().rotation(), 2);
+        bb = spawnAdjacent(bb, houseSmallExtensionRoof, extensionOrientation.rotation(), 2);
         bb = spawnAdjacent(bb, houseExtensionRoof, extensionOrientation.rotation(), 2);
-        bb = spawnAdjacent(bb, houseExtensionRoof, extensionOrientation.rotation(), 2);
-        spawnAdjacent(bb, houseExtensionRoof, orientation.rotation(), 2);
+        spawnAdjacent(bb, houseSmallExtensionRoof, orientation.rotation(), 2);
     }
 
     private int[] getRotationFactor(Rotation rotation) {
@@ -86,15 +86,10 @@ public class HouseBuilder {
     }
 
     private StructureBoundingBox spawnStructure(Template template, BlockPos pos, Rotation rotation) {
-        int[] rotationFactor = getRotationFactor(rotation);
-        int factorX = rotationFactor[0];
-        int factorZ = rotationFactor[1];
-
+        PlacementSettings settings = new PlacementSettings().setRotation(rotation);
         BlockPos size = template.getSize();
 
-        pos = pos.add(factorX * size.getX() / 2, 0, factorZ * size.getZ() / 2);
-
-        PlacementSettings settings = new PlacementSettings().setRotation(rotation);
+        pos = pos.add(Template.transformedBlockPos(settings, new BlockPos(-size.getX() / 2, 0, -size.getZ() / 2)));
 
         template.addBlocksToWorld(world, pos, settings);
 
