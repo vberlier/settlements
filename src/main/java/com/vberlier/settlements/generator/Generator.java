@@ -327,7 +327,7 @@ public class Generator {
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
 
-            new HouseBuilder(world).build(slot);
+            new HouseBuilder(world, graph).build(slot);
 
             for (int i = 0; i < 5; i++) {
                 world.setBlockState(slot.getCenter().getTerrainBlock().add(0, i, 0), Blocks.REDSTONE_BLOCK.getDefaultState());

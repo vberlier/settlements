@@ -1,5 +1,6 @@
 package com.vberlier.settlements.generator;
 
+import com.google.common.graph.MutableValueGraph;
 import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.server.MinecraftServer;
@@ -17,15 +18,17 @@ public class HouseBuilder {
     private final WorldServer worldServer;
     private final MinecraftServer minecraftServer;
     private final TemplateManager templateManager;
+    private MutableValueGraph<Slot, Integer> graph;
 
     private final Template houseBase;
     private final Template houseBaseRoof;
 
-    public HouseBuilder(World world) {
+    public HouseBuilder(World world, MutableValueGraph<Slot, Integer> graph) {
         this.world = world;
         worldServer = (WorldServer) world;
         minecraftServer = worldServer.getMinecraftServer();
         templateManager = worldServer.getStructureTemplateManager();
+        this.graph = graph;
 
         houseBase = getTemplate("house_base");
         houseBaseRoof = getTemplate("house_base_roof");
@@ -33,17 +36,22 @@ public class HouseBuilder {
 
     public void build(Slot slot) {
         BlockPos center = slot.getCenter().getTerrainBlock();
-        Vec normal = slot.getNormal();
 
-        double east = normal.cross(Vec.east).length();
-        double south = normal.cross(Vec.south).length();
+        Vec orientation = slot.getNormal();
+
+        for (Slot adjacentNode : graph.adjacentNodes(slot)) {
+            orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(center).normalize());
+        }
+
+        double east = orientation.cross(Vec.east).length();
+        double south = orientation.cross(Vec.south).length();
 
         Rotation rotation;
 
         if (east < south) {
-            rotation = normal.x > 0 ? Rotation.NONE : Rotation.CLOCKWISE_180;
+            rotation = orientation.x > 0 ? Rotation.NONE : Rotation.CLOCKWISE_180;
         } else {
-            rotation = normal.z > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
+            rotation = orientation.z > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
         }
 
         spawnStructure(houseBase, center, rotation);
