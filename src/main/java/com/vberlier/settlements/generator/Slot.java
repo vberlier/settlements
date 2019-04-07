@@ -1,5 +1,6 @@
 package com.vberlier.settlements.generator;
 
+import com.google.common.graph.ValueGraph;
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
@@ -93,7 +94,7 @@ public class Slot implements Comparable<Slot> {
         return edge;
     }
 
-    private int orientation(Position c1, Position c2, Position c3) {
+    private int relativeConvexOrientation(Position c1, Position c2, Position c3) {
         int val = (c2.j - c1.j) * (c3.i - c2.i) - (c2.i - c1.i) * (c3.j - c2.j);
 
         if (val == 0) {
@@ -124,7 +125,7 @@ public class Slot implements Comparable<Slot> {
             int q = (p + 1) % edge.length;
 
             for (int i = 0; i < edge.length; i++) {
-                if (orientation(edge[p], edge[i], edge[q]) == 2) {
+                if (relativeConvexOrientation(edge[p], edge[i], edge[q]) == 2) {
                     q = i;
                 }
             }
@@ -199,6 +200,16 @@ public class Slot implements Comparable<Slot> {
 
     public Set<Position> getVegetationBlocks() {
         return vegetationBlocks;
+    }
+
+    public Vec getOrientation(ValueGraph<Slot, Integer> graph) {
+        Vec orientation = normal;
+
+        for (Slot adjacentNode : graph.adjacentNodes(this)) {
+            orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(center.getTerrainBlock()).normalize());
+        }
+
+        return orientation.project(Vec.Axis.X, Vec.Axis.Z);
     }
 
     @Override
