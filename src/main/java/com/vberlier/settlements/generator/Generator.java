@@ -87,8 +87,9 @@ public class Generator {
         computeSlotGraph();
         removeShortEdges();
         removeTriangles();
+        populateGraph();
 
-        debugGraph();
+        debugEdges();
     }
 
     private void computeMaps() {
@@ -320,7 +321,21 @@ public class Generator {
         }
     }
 
-    private void debugGraph() {
+    private void populateGraph() {
+        Queue<Slot> slotsQueue = new PriorityQueue<>(graph.nodes());
+
+        while (!slotsQueue.isEmpty()) {
+            Slot slot = slotsQueue.poll();
+
+            new HouseBuilder(world).build(slot);
+
+            for (int i = 0; i < 5; i++) {
+                world.setBlockState(slot.getCenter().getTerrainBlock().add(0, i, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
+            }
+        }
+    }
+
+    private void debugNodes() {
         int color = 0;
 
         for (Slot node : graph.nodes()) {
@@ -331,7 +346,9 @@ public class Generator {
             color++;
             color %= 16;
         }
+    }
 
+    private void debugEdges() {
         for (EndpointPair<Slot> edge : graph.edges()) {
             for (Point point : new Point(edge.nodeU().getCenter()).line(edge.nodeV().getCenter())) {
                 world.setBlockState(positions[(int) point.x][(int) point.y].getTerrainBlock(), Blocks.IRON_BLOCK.getDefaultState());

@@ -8,9 +8,9 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.apache.logging.log4j.Logger;
 
-@Mod(modid = SettlementsMod.MODID, name = SettlementsMod.NAME, version = SettlementsMod.VERSION)
+@Mod(modid = SettlementsMod.MOD_ID, name = SettlementsMod.NAME, version = SettlementsMod.VERSION)
 public class SettlementsMod {
-    public static final String MODID = "settlements";
+    public static final String MOD_ID = "settlements";
     public static final String NAME = "Settlements Mod";
     public static final String VERSION = "0.1.0";
 
@@ -23,7 +23,7 @@ public class SettlementsMod {
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
-        logger.info("Initializing {} {}", MODID, VERSION);
+        logger.info("Initializing {} {}", MOD_ID, VERSION);
     }
 
     @EventHandler

@@ -6,7 +6,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 
-public class Slot {
+public class Slot implements Comparable<Slot> {
     private final Position[] surface;
     private final Position[][] terrain;
     private final Position[] edge;
@@ -149,6 +149,10 @@ public class Slot {
         return normal;
     }
 
+    public double getVerticality() {
+        return Vec.up.cross(normal).length();
+    }
+
     public Position[] getSurface() {
         return surface;
     }
@@ -195,6 +199,31 @@ public class Slot {
 
     public Set<Position> getVegetationBlocks() {
         return vegetationBlocks;
+    }
+
+    @Override
+    public int compareTo(Slot o) {
+        int res = Integer.compare(liquidBlocks.size(), o.liquidBlocks.size());
+        if (res != 0) {
+            return res;
+        }
+
+        res = Double.compare(getVerticality(), o.getVerticality());
+        if (res != 0) {
+            return res;
+        }
+
+        res = Integer.compare(vegetationBlocks.size(), o.vegetationBlocks.size());
+        if (res != 0) {
+            return res;
+        }
+
+        res = Double.compare(center.getDistanceFromCenter(), o.center.getDistanceFromCenter());
+        if (res != 0) {
+            return res;
+        }
+
+        return center.getTerrainBlock().compareTo(o.center.getTerrainBlock());
     }
 
     @Override
