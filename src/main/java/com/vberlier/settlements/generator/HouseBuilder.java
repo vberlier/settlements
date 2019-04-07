@@ -9,6 +9,7 @@ import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.gen.structure.template.PlacementSettings;
 import net.minecraft.world.gen.structure.template.Template;
 import net.minecraft.world.gen.structure.template.TemplateManager;
@@ -46,42 +47,29 @@ public class HouseBuilder {
         Position center = slot.getCenter();
         BlockPos centerBlock = center.getTerrainBlock();
 
-        Vec orientation = slot.getNormal().mul(-1);
+        Vec orientation = slot.getNormal();
 
         for (Slot adjacentNode : graph.adjacentNodes(slot)) {
             orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(centerBlock).normalize());
         }
 
-        double east = orientation.cross(Vec.east).length();
-        double south = orientation.cross(Vec.south).length();
+        orientation = orientation.project(Vec.Axis.X, Vec.Axis.Z);
 
-        Rotation rotation;
-
-        int expandX;
-        int expandZ;
-        Rotation expandRotation;
-
-        if (east < south) {
-            rotation = orientation.x > 0 ? Rotation.NONE : Rotation.CLOCKWISE_180;
-            expandX = 0;
-            expandZ = orientation.z > 0 ? -1 : 1;
-            expandRotation = expandZ > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
-        } else {
-            rotation = orientation.z > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
-            expandX = orientation.x > 0 ? -1 : 1;
-            expandZ = 0;
-            expandRotation = expandX > 0 ? Rotation.NONE : Rotation.CLOCKWISE_180;
-        }
+        Vec extensionOrientation = (orientation.axis() == Vec.Axis.X ? orientation.project(Vec.Axis.Z) : orientation.project(Vec.Axis.X)).mul(-1);
 
         BlockPos baseSize = houseBase.getSize();
 
-        spawnStructure(houseBase, centerBlock, rotation);
+        StructureBoundingBox bb = spawnStructure(houseBase, centerBlock, orientation.rotation());
+        spawnAdjacent(bb, houseExtension, orientation.inverse().rotation());
+        bb = spawnAdjacent(bb, houseExtension, extensionOrientation.rotation());
+        bb = spawnAdjacent(bb, houseExtension, extensionOrientation.rotation());
+        spawnAdjacent(bb, houseExtension, orientation.rotation());
 
-        BlockPos expansionPos = centerBlock.add((baseSize.getX() / 2 + houseExtension.getSize().getX() / 2) * expandX, 0, (baseSize.getX() / 2 + houseExtension.getSize().getX() / 2) * expandZ);
-        spawnStructure(houseExtension, expansionPos, expandRotation);
-
-        spawnStructure(houseBaseRoof, centerBlock.add(0, baseSize.getY() - 1, 0), rotation);
-        spawnStructure(houseExtensionRoof, expansionPos.add(0, houseExtension.getSize().getY() - 1, 0), expandRotation);
+        bb = spawnStructure(houseBaseRoof, centerBlock.add(0, baseSize.getY() - 1, 0), orientation.rotation());
+        spawnAdjacent(bb, houseExtensionRoof, orientation.inverse().rotation(), 2);
+        bb = spawnAdjacent(bb, houseExtensionRoof, extensionOrientation.rotation(), 2);
+        bb = spawnAdjacent(bb, houseExtensionRoof, extensionOrientation.rotation(), 2);
+        spawnAdjacent(bb, houseExtensionRoof, orientation.rotation(), 2);
     }
 
     private int[] getRotationFactor(Rotation rotation) {
@@ -97,32 +85,7 @@ public class HouseBuilder {
         }
     }
 
-    private Rotation rotate(Rotation rotation, int angle) {
-        angle += 360;
-
-        while (angle > 0) {
-            angle -= 90;
-
-            switch (rotation) {
-                case NONE:
-                    rotation = Rotation.COUNTERCLOCKWISE_90;
-                    break;
-                case CLOCKWISE_90:
-                    rotation = Rotation.NONE;
-                    break;
-                case CLOCKWISE_180:
-                    rotation = Rotation.CLOCKWISE_90;
-                    break;
-                default:
-                    rotation = Rotation.CLOCKWISE_180;
-                    break;
-            }
-        }
-
-        return rotation;
-    }
-
-    private void spawnStructure(Template template, BlockPos pos, Rotation rotation) {
+    private StructureBoundingBox spawnStructure(Template template, BlockPos pos, Rotation rotation) {
         int[] rotationFactor = getRotationFactor(rotation);
         int factorX = rotationFactor[0];
         int factorZ = rotationFactor[1];
@@ -131,7 +94,38 @@ public class HouseBuilder {
 
         pos = pos.add(factorX * size.getX() / 2, 0, factorZ * size.getZ() / 2);
 
-        template.addBlocksToWorld(world, pos, new PlacementSettings().setRotation(rotation));
+        PlacementSettings settings = new PlacementSettings().setRotation(rotation);
+
+        template.addBlocksToWorld(world, pos, settings);
+
+        return new StructureBoundingBox(pos, Template.transformedBlockPos(settings, size.add(-1, -1, -1)).add(pos));
+    }
+
+    private StructureBoundingBox spawnAdjacent(StructureBoundingBox boundingBox, Template template, Rotation rotation) {
+        return spawnAdjacent(boundingBox, template, rotation, 0);
+    }
+
+    private StructureBoundingBox spawnAdjacent(StructureBoundingBox boundingBox, Template template, Rotation rotation, int inset) {
+        BlockPos pos;
+
+        int offset = template.getSize().getX() / 2 - inset;
+
+        switch (rotation) {
+            case NONE:
+                pos = new BlockPos(boundingBox.maxX + offset, boundingBox.minY, boundingBox.minZ + boundingBox.getZSize() / 2);
+                break;
+            case CLOCKWISE_90:
+                pos = new BlockPos(boundingBox.maxX - boundingBox.getXSize() / 2, boundingBox.minY, boundingBox.maxZ + offset);
+                break;
+            case CLOCKWISE_180:
+                pos = new BlockPos(boundingBox.minX - offset, boundingBox.minY, boundingBox.maxZ - boundingBox.getZSize() / 2);
+                break;
+            default:
+                pos = new BlockPos(boundingBox.minX + boundingBox.getXSize() / 2, boundingBox.minY, boundingBox.minZ - offset);
+                break;
+        }
+
+        return spawnStructure(template, pos, rotation);
     }
 
     private Template getTemplate(String name) {

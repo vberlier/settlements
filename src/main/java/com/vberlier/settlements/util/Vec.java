@@ -1,11 +1,69 @@
 package com.vberlier.settlements.util;
 
+import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 import java.util.Objects;
 
 public class Vec implements Comparable<Vec> {
+    public enum Direction {
+        UP, DOWN, EAST, WEST, SOUTH, NORTH;
+
+        public Vec vec() {
+            switch (this) {
+                case UP:
+                    return Vec.up;
+                case DOWN:
+                    return Vec.down;
+                case EAST:
+                    return Vec.east;
+                case WEST:
+                    return Vec.west;
+                case SOUTH:
+                    return Vec.south;
+                default:
+                    return Vec.north;
+            }
+        }
+
+        public Rotation rotation() {
+            switch (this) {
+                case EAST:
+                    return Rotation.NONE;
+                case WEST:
+                    return Rotation.CLOCKWISE_180;
+                case SOUTH:
+                    return Rotation.CLOCKWISE_90;
+                default:
+                    return Rotation.COUNTERCLOCKWISE_90;
+            }
+        }
+    }
+
+    public enum Axis {
+        X, Y, Z;
+
+        public Direction direction() {
+            switch (this) {
+                case X:
+                    return Direction.EAST;
+                case Y:
+                    return Direction.UP;
+                default:
+                    return Direction.SOUTH;
+            }
+        }
+
+        public Vec vec() {
+            return direction().vec();
+        }
+
+        public Rotation rotation() {
+            return direction().rotation();
+        }
+    }
+
     public static final Vec up = new Vec(0, 1, 0);
     public static final Vec down = new Vec(0, -1, 0);
     public static final Vec east = new Vec(1, 0, 0);
@@ -13,9 +71,9 @@ public class Vec implements Comparable<Vec> {
     public static final Vec south = new Vec(0, 0, 1);
     public static final Vec north = new Vec(0, 0, -1);
 
-    public final double x;
-    public final double y;
-    public final double z;
+    public double x;
+    public double y;
+    public double z;
 
     public Vec(BlockPos pos) {
         this(pos.getX(), pos.getY(), pos.getZ());
@@ -140,11 +198,70 @@ public class Vec implements Comparable<Vec> {
         return new Vec(x / length, y / length, z / length);
     }
 
-    public static Vec average(Vec ...vectors) {
+    public Direction direction() {
+        double absX = Math.abs(x);
+        double absY = Math.abs(y);
+        double absZ = Math.abs(z);
+
+        if (absY > absX && absY > absZ) {
+            return y > 0 ? Direction.UP : Direction.DOWN;
+        }
+
+        if (absX > absZ) {
+            return x > 0 ? Direction.EAST : Direction.WEST;
+        } else {
+            return z > 0 ? Direction.SOUTH : Direction.NORTH;
+        }
+    }
+
+    public Rotation rotation() {
+        return direction().rotation();
+    }
+
+    public Axis axis() {
+        Direction direction = direction();
+
+        switch (direction) {
+            case UP:
+            case DOWN:
+                return Axis.Y;
+            case EAST:
+            case WEST:
+                return Axis.X;
+            default:
+                return Axis.Z;
+        }
+    }
+
+    public Vec project(Axis... axis) {
+        Vec factor = new Vec(0);
+
+        for (Axis a : axis) {
+            switch (a) {
+                case X:
+                    factor.x = 1;
+                    break;
+                case Y:
+                    factor.y = 1;
+                    break;
+                default:
+                    factor.z = 1;
+                    break;
+            }
+        }
+
+        return mul(factor);
+    }
+
+    public Vec inverse() {
+        return mul(-1);
+    }
+
+    public static Vec average(Vec... vectors) {
         return Arrays.stream(vectors).reduce(new Vec(0), Vec::add).div(vectors.length);
     }
 
-    public static Vec average(BlockPos ...positions) {
+    public static Vec average(BlockPos... positions) {
         return new Vec(Arrays.stream(positions).reduce(new BlockPos(0, 0, 0), BlockPos::add)).div(positions.length);
     }
 
