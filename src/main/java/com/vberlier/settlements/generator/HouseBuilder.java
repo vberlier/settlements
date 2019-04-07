@@ -72,19 +72,6 @@ public class HouseBuilder {
         spawnAdjacent(bb, houseSmallExtensionRoof, orientation.rotation(), 2);
     }
 
-    private int[] getRotationFactor(Rotation rotation) {
-        switch (rotation) {
-            case NONE:
-                return new int[]{-1, -1};
-            case CLOCKWISE_90:
-                return new int[]{1, -1};
-            case CLOCKWISE_180:
-                return new int[]{1, 1};
-            default:
-                return new int[]{-1, 1};
-        }
-    }
-
     private StructureBoundingBox spawnStructure(Template template, BlockPos pos, Rotation rotation) {
         PlacementSettings settings = new PlacementSettings().setRotation(rotation);
         BlockPos size = template.getSize();
