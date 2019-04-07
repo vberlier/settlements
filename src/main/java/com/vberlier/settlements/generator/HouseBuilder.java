@@ -46,7 +46,7 @@ public class HouseBuilder {
         Position center = slot.getCenter();
         BlockPos centerBlock = center.getTerrainBlock();
 
-        Vec orientation = slot.getNormal();
+        Vec orientation = slot.getNormal().mul(-1);
 
         for (Slot adjacentNode : graph.adjacentNodes(slot)) {
             orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(centerBlock).normalize());
@@ -57,14 +57,31 @@ public class HouseBuilder {
 
         Rotation rotation;
 
+        int expandX;
+        int expandZ;
+        Rotation expandRotation;
+
         if (east < south) {
             rotation = orientation.x > 0 ? Rotation.NONE : Rotation.CLOCKWISE_180;
+            expandX = 0;
+            expandZ = orientation.z > 0 ? -1 : 1;
+            expandRotation = expandZ > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
         } else {
             rotation = orientation.z > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
+            expandX = orientation.x > 0 ? -1 : 1;
+            expandZ = 0;
+            expandRotation = expandX > 0 ? Rotation.NONE : Rotation.CLOCKWISE_180;
         }
 
+        BlockPos baseSize = houseBase.getSize();
+
         spawnStructure(houseBase, centerBlock, rotation);
-        spawnStructure(houseBaseRoof, centerBlock.add(0, houseBase.getSize().getY() - 1, 0), rotation);
+
+        BlockPos expansionPos = centerBlock.add((baseSize.getX() / 2 + houseExtension.getSize().getX() / 2) * expandX, 0, (baseSize.getX() / 2 + houseExtension.getSize().getX() / 2) * expandZ);
+        spawnStructure(houseExtension, expansionPos, expandRotation);
+
+        spawnStructure(houseBaseRoof, centerBlock.add(0, baseSize.getY() - 1, 0), rotation);
+        spawnStructure(houseExtensionRoof, expansionPos.add(0, houseExtension.getSize().getY() - 1, 0), expandRotation);
     }
 
     private int[] getRotationFactor(Rotation rotation) {
@@ -78,6 +95,31 @@ public class HouseBuilder {
             default:
                 return new int[]{-1, 1};
         }
+    }
+
+    private Rotation rotate(Rotation rotation, int angle) {
+        angle += 360;
+
+        while (angle > 0) {
+            angle -= 90;
+
+            switch (rotation) {
+                case NONE:
+                    rotation = Rotation.COUNTERCLOCKWISE_90;
+                    break;
+                case CLOCKWISE_90:
+                    rotation = Rotation.NONE;
+                    break;
+                case CLOCKWISE_180:
+                    rotation = Rotation.CLOCKWISE_90;
+                    break;
+                default:
+                    rotation = Rotation.CLOCKWISE_180;
+                    break;
+            }
+        }
+
+        return rotation;
     }
 
     private void spawnStructure(Template template, BlockPos pos, Rotation rotation) {
