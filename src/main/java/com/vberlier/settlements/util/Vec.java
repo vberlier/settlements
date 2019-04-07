@@ -7,6 +7,11 @@ import java.util.Objects;
 
 public class Vec implements Comparable<Vec> {
     public static final Vec up = new Vec(0, 1, 0);
+    public static final Vec down = new Vec(0, -1, 0);
+    public static final Vec east = new Vec(1, 0, 0);
+    public static final Vec west = new Vec(-1, 0, 0);
+    public static final Vec south = new Vec(0, 0, 1);
+    public static final Vec north = new Vec(0, 0, -1);
 
     public final double x;
     public final double y;
