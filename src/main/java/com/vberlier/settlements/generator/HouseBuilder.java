@@ -22,6 +22,10 @@ public class HouseBuilder {
 
     private final Template houseBase;
     private final Template houseBaseRoof;
+    private final Template houseExtension;
+    private final Template houseExtensionRoof;
+    private final Template houseSmallExtension;
+    private final Template houseSmallExtensionRoof;
 
     public HouseBuilder(World world, MutableValueGraph<Slot, Integer> graph) {
         this.world = world;
@@ -32,15 +36,20 @@ public class HouseBuilder {
 
         houseBase = getTemplate("house_base");
         houseBaseRoof = getTemplate("house_base_roof");
+        houseExtension = getTemplate("house_extension");
+        houseExtensionRoof = getTemplate("house_extension_roof");
+        houseSmallExtension = getTemplate("house_small_extension");
+        houseSmallExtensionRoof = getTemplate("house_small_extension_roof");
     }
 
     public void build(Slot slot) {
-        BlockPos center = slot.getCenter().getTerrainBlock();
+        Position center = slot.getCenter();
+        BlockPos centerBlock = center.getTerrainBlock();
 
         Vec orientation = slot.getNormal();
 
         for (Slot adjacentNode : graph.adjacentNodes(slot)) {
-            orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(center).normalize());
+            orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(centerBlock).normalize());
         }
 
         double east = orientation.cross(Vec.east).length();
@@ -54,8 +63,8 @@ public class HouseBuilder {
             rotation = orientation.z > 0 ? Rotation.CLOCKWISE_90 : Rotation.COUNTERCLOCKWISE_90;
         }
 
-        spawnStructure(houseBase, center, rotation);
-        spawnStructure(houseBaseRoof, center.add(0, houseBase.getSize().getY() - 1, 0), rotation);
+        spawnStructure(houseBase, centerBlock, rotation);
+        spawnStructure(houseBaseRoof, centerBlock.add(0, houseBase.getSize().getY() - 1, 0), rotation);
     }
 
     private int[] getRotationFactor(Rotation rotation) {
