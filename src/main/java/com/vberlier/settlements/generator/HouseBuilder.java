@@ -58,28 +58,23 @@ public class HouseBuilder {
         spawnStructure(houseBaseRoof, center.add(0, houseBase.getSize().getY() - 1, 0), rotation);
     }
 
-    private void spawnStructure(Template template, BlockPos pos, Rotation rotation) {
-        int factorX = -1;
-        int factorZ = -1;
-
+    private int[] getRotationFactor(Rotation rotation) {
         switch (rotation) {
             case NONE:
-                factorX = -1;
-                factorZ = -1;
-                break;
+                return new int[]{-1, -1};
             case CLOCKWISE_90:
-                factorX = 1;
-                factorZ = -1;
-                break;
+                return new int[]{1, -1};
             case CLOCKWISE_180:
-                factorX = 1;
-                factorZ = 1;
-                break;
-            case COUNTERCLOCKWISE_90:
-                factorX = -1;
-                factorZ = 1;
-                break;
+                return new int[]{1, 1};
+            default:
+                return new int[]{-1, 1};
         }
+    }
+
+    private void spawnStructure(Template template, BlockPos pos, Rotation rotation) {
+        int[] rotationFactor = getRotationFactor(rotation);
+        int factorX = rotationFactor[0];
+        int factorZ = rotationFactor[1];
 
         BlockPos size = template.getSize();
 
