@@ -208,7 +208,6 @@ public class Generator {
                         }
 
                         if (origin.getLiquids().size() > 0 != neighbor.getLiquids().size() > 0) {
-                            System.out.println(origin.getLiquids().size() + " vs " + neighbor.getLiquids().size());
                             continue;
                         }
 

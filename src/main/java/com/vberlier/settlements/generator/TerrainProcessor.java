@@ -39,12 +39,6 @@ public class TerrainProcessor {
 
         for (Position edgePosition : slot.getConvexHull()) {
             Vec samplingOrigin = new Vec(edgePosition.getTerrainBlock());
-            Vec centerDirection = originalCenter.sub(samplingOrigin).normalize();
-
-            while (edgePosition.getLiquids().size() > 0 != centerPosition.getLiquids().size() > 0) {
-                samplingOrigin = samplingOrigin.add(centerDirection);
-                edgePosition = terrain[(int) Math.round(samplingOrigin.x - originX)][(int) Math.round(samplingOrigin.z - originZ)];
-            }
 
             for (Vec sample : samples) {
                 Vec edge = samplingOrigin.add(sample);
@@ -151,26 +145,9 @@ public class TerrainProcessor {
             fillBlocksBelow(x, y, z);
         }
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 7; i++) {
             cleanupBlocks(minX, minZ, maxX, maxZ);
         }
-
-        for (int i = 0; i < surfaceSizeX; i++) {
-            for (int j = 0; j < surfaceSizeZ; j++) {
-                int x = minX + i;
-                int z = minZ + j;
-                int y =  world.getHeight(x, z);
-
-                heightsArray[i][j] = y;
-                BlockPos block = new BlockPos(x, y, z);
-
-                Position position  = terrain[x - originX][z - originZ];
-                position.setTerrainBlock(block);
-                position.setTerrainBlockState(world.getBlockState(block));
-            }
-        }
-
-        recomputeNormals(minX, minZ, heightsArray);
     }
 
     private void removeVegetation(int x, int z) {
@@ -251,68 +228,36 @@ public class TerrainProcessor {
                 int y = world.getHeight(x, z);
 
                 int neighbors = 0;
+                boolean liquidFlag = false;
 
                 for (int[] offset : Position.neighbors) {
                     BlockPos neighbor = new BlockPos(x + offset[0], y, z + offset[1]);
+                    IBlockState state = world.getBlockState(neighbor);
+                    Block block = state.getBlock();
 
-                    if (!world.isAirBlock(neighbor)) {
+                    if (!block.isAir(state, world, neighbor) && !block.isPassable(world, neighbor) && !block.isFlammable(world, neighbor, EnumFacing.UP)) {
                         neighbors++;
+                    }
+
+                    if (world.containsAnyLiquid(new AxisAlignedBB(neighbor))) {
+                        liquidFlag = true;
+                        break;
                     }
                 }
 
-                if (neighbors < 2) {
-                    world.setBlockToAir(new BlockPos(x, y, z));
+                if (liquidFlag || neighbors > 2) {
                     continue;
                 }
 
-                y++;
+                BlockPos block = new BlockPos(x, y, z);
 
-                int upperNeighbors = 0;
-                IBlockState state = Blocks.AIR.getDefaultState();
+                world.setBlockToAir(block);
 
-                for (int[] offset : Position.neighbors) {
-                    BlockPos neighbor = new BlockPos(x + offset[0], y, z + offset[1]);
+                block = block.down();
 
-                    if (!world.isAirBlock(neighbor)) {
-                        upperNeighbors++;
-                        state = world.getBlockState(neighbor);
-                    }
+                if (world.getBlockState(block).getBlock().equals(Blocks.DIRT)) {
+                    world.setBlockState(block, Blocks.GRASS.getDefaultState());
                 }
-
-                if (upperNeighbors > 2) {
-                    world.setBlockState(new BlockPos(x, y, z), state);
-                }
-            }
-        }
-    }
-
-    private void recomputeNormals(int minX, int minZ, int[][] heightsArray) {
-        int verticesSizeX = heightsArray.length - 1;
-        int verticesSizeZ = heightsArray[0].length - 1;
-        Vec[][] vertices = new Vec[verticesSizeX][verticesSizeZ];
-
-        Vec[][] firstPass = vertices.clone();
-
-        for (int i = 0; i < verticesSizeX; i++) {
-            for (int j = 0; j < verticesSizeZ; j++) {
-                Vec neighbors = Vec.zero;
-
-                for (int x = 0; x < 2; x++) {
-                    for (int z = 0; z < 2; z++) {
-                        neighbors = neighbors.add(new Vec(minX + i + x, heightsArray[i + x][j + z], minZ + j + z));
-                    }
-                }
-
-                firstPass[i][j] = neighbors.div(4);
-            }
-        }
-
-        smoothPass(firstPass, vertices);
-
-        for (int i = 1; i < verticesSizeX; i++) {
-            for (int j = 1; j < verticesSizeZ; j++) {
-                Vec normal = Vec.normal(vertices[i - 1][j - 1], vertices[i - 1][j], vertices[i][j], vertices[i][j - 1]).normalize();
-                terrain[i + minX - originX][j + minZ - originZ].setNormal(normal);
             }
         }
     }
