@@ -3,6 +3,10 @@ package com.vberlier.settlements.generator;
 import com.google.common.graph.ValueGraph;
 import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Vec;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockColored;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
@@ -16,6 +20,16 @@ public class HouseBuilder {
     private final World world;
     private final TemplateManager templateManager;
     private ValueGraph<Slot, Integer> graph;
+
+    private int colorIndex = 0;
+    private final EnumDyeColor[] colors = {
+            EnumDyeColor.WHITE,
+            EnumDyeColor.YELLOW,
+            EnumDyeColor.ORANGE,
+            EnumDyeColor.LIGHT_BLUE,
+            EnumDyeColor.LIME,
+            EnumDyeColor.PINK,
+    };
 
     private final Template houseBase;
     private final Template houseBaseFoundation;
@@ -73,6 +87,8 @@ public class HouseBuilder {
         spawnAdjacent(bb, houseSmallExtensionRoof, extensionOrientation.rotation(), 2);
 
         // TODO: Replace the default wood type with the most common
+
+        colorIndex = (colorIndex + 1) % colors.length;
     }
 
     private StructureBoundingBox spawnStructure(Template template, BlockPos pos, Rotation rotation) {
@@ -83,7 +99,11 @@ public class HouseBuilder {
 
         template.addBlocksToWorld(world, pos, settings);
 
-        return new StructureBoundingBox(pos, Template.transformedBlockPos(settings, size.add(-1, -1, -1)).add(pos));
+        StructureBoundingBox bb = new StructureBoundingBox(pos, Template.transformedBlockPos(settings, size.add(-1, -1, -1)).add(pos));
+
+        replaceColor(bb);
+
+        return bb;
     }
 
     private StructureBoundingBox spawnAdjacent(StructureBoundingBox boundingBox, Template template, Rotation rotation) {
@@ -115,5 +135,19 @@ public class HouseBuilder {
 
     private Template getTemplate(String name) {
         return templateManager.getTemplate(world.getMinecraftServer(), new ResourceLocation(SettlementsMod.MOD_ID, name));
+    }
+
+    private void replaceColor(StructureBoundingBox bb) {
+        BlockPos min = new BlockPos(bb.minX, bb.minY, bb.minZ);
+        BlockPos max = new BlockPos(bb.maxX, bb.maxY, bb.maxZ);
+
+        for (BlockPos pos : BlockPos.getAllInBox(min, max)) {
+            IBlockState state = world.getBlockState(pos);
+            Block block = state.getBlock();
+
+            if (block instanceof BlockColored) {
+                world.setBlockState(pos, state.withProperty(BlockColored.COLOR, colors[colorIndex]));
+            }
+        }
     }
 }
