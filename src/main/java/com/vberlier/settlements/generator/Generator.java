@@ -87,7 +87,7 @@ public class Generator {
         computeSlotGraph();
         removeShortEdges();
         removeTriangles();
-        populateGraph();
+        processGraph();
 
         debugEdges();
     }
@@ -109,8 +109,10 @@ public class Generator {
 
                 coordinates.setDistanceFromCenter(center.sub(x, 0, z).length());
 
+                IBlockState state = world.getBlockState(pos);
+
                 while (pos.getY() > 0) {
-                    IBlockState state = world.getBlockState(pos);
+                    state = world.getBlockState(pos);
                     Block block = state.getBlock();
 
                     if (world.containsAnyLiquid(new AxisAlignedBB(pos))) {
@@ -130,14 +132,32 @@ public class Generator {
 
                 terrainMap[i][j] = pos;
                 coordinates.setTerrainBlock(pos);
+                coordinates.setTerrainBlockState(state);
             }
         }
     }
 
     private void computeVertices() {
+        Vec[][] firstPass = vertices.clone();
+
         for (int i = 0; i < verticesSizeX; i++) {
             for (int j = 0; j < verticesSizeZ; j++) {
                 vertices[i][j] = Vec.average(terrainMap[i][j], terrainMap[i + 1][j], terrainMap[i + 1][j + 1], terrainMap[i][j + 1]);
+                firstPass[i][j] = vertices[i][j];
+            }
+        }
+
+        for (int i = 1; i < verticesSizeX - 1; i++) {
+            for (int j = 1; j < verticesSizeZ - 1; j++) {
+                Vec neighbors = Vec.zero;
+
+                for (int x = -1; x < 2; x++) {
+                    for (int z = -1; z < 2; z++) {
+                        neighbors = neighbors.add(firstPass[i + x][j + z]);
+                    }
+                }
+
+                vertices[i][j] = neighbors.div(9);
             }
         }
     }
@@ -321,17 +341,23 @@ public class Generator {
         }
     }
 
-    private void populateGraph() {
+    private void processGraph() {
         Queue<Slot> slotsQueue = new PriorityQueue<>(graph.nodes());
 
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
 
-            new HouseBuilder(world, graph).build(slot);
+            // TODO: Treat slots differently depending on the water content, vegetation, steepness...
 
-            for (int i = 0; i < 5; i++) {
-                world.setBlockState(slot.getCenter().getTerrainBlock().add(0, i, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
-            }
+            // TODO: Vegetation removal
+
+            // TODO: Terrain cleanup
+
+            // TODO: Don't use hardcoded house layout
+
+            // new HouseBuilder(world, graph).build(slot);
+
+            new TerrainProcessor(world, originX, originZ, positions).flatten(slot, Vec.up, 3 * safeSlotRadius / 4);
         }
     }
 
@@ -349,9 +375,16 @@ public class Generator {
     }
 
     private void debugEdges() {
+        for (Slot slot : graph.nodes()) {
+            for (int i = 0; i < 5; i++) {
+                world.setBlockState(slot.getCenter().getTerrainBlock().add(0, i, 0), Blocks.REDSTONE_BLOCK.getDefaultState());
+            }
+        }
+
         for (EndpointPair<Slot> edge : graph.edges()) {
             for (Point point : new Point(edge.nodeU().getCenter()).line(edge.nodeV().getCenter())) {
-                world.setBlockState(positions[(int) point.x][(int) point.y].getTerrainBlock(), Blocks.IRON_BLOCK.getDefaultState());
+                BlockPos pos = positions[(int) point.x][(int) point.y].getTerrainBlock();
+                world.setBlockState(new BlockPos(pos.getX(), world.getHeight(pos.getX(), pos.getZ()) - 1, pos.getZ()), Blocks.IRON_BLOCK.getDefaultState());
             }
         }
     }

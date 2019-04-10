@@ -1,6 +1,7 @@
 package com.vberlier.settlements.generator;
 
 import com.vberlier.settlements.util.Vec;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ public class Position implements Comparable<Position> {
     public final int j;
     private BlockPos highestBlock;
     private BlockPos terrainBlock;
+    private IBlockState terrainBlockState;
     private Vec normal;
     private ArrayList<BlockPos> liquids;
     private ArrayList<BlockPos> vegetation;
@@ -99,6 +101,14 @@ public class Position implements Comparable<Position> {
 
     public void setSurface(Slot surface) {
         this.surface = surface;
+    }
+
+    public IBlockState getTerrainBlockState() {
+        return terrainBlockState;
+    }
+
+    public void setTerrainBlockState(IBlockState terrainBlockState) {
+        this.terrainBlockState = terrainBlockState;
     }
 
     @Override

@@ -1,10 +1,10 @@
 package com.vberlier.settlements.util;
 
+import com.google.common.base.MoreObjects;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 public class Vec implements Comparable<Vec> {
     public enum Direction {
@@ -63,6 +63,9 @@ public class Vec implements Comparable<Vec> {
             return direction().rotation();
         }
     }
+
+    public static final Vec zero = new Vec(0);
+    public static final Vec one = new Vec(1);
 
     public static final Vec up = new Vec(0, 1, 0);
     public static final Vec down = new Vec(0, -1, 0);
@@ -257,6 +260,17 @@ public class Vec implements Comparable<Vec> {
         return mul(-1);
     }
 
+    public Vec rotateY(double angle) {
+        double cos = Math.cos(-angle);
+        double sin = Math.sin(-angle);
+        return new Vec(x * cos - z * sin, y, x * sin + z * cos);
+    }
+
+    public double angleY() {
+        Vec projection = project(Axis.X, Axis.Z);
+        return -Math.acos(projection.dot(Vec.south) / projection.length());
+    }
+
     public static Vec average(Vec... vectors) {
         return Arrays.stream(vectors).reduce(new Vec(0), Vec::add).div(vectors.length);
     }
@@ -271,6 +285,56 @@ public class Vec implements Comparable<Vec> {
 
     public static Vec normal(Vec v1, Vec v2, Vec v3, Vec v4) {
         return Vec.average(normal(v1, v2, v3), normal(v1, v3, v4));
+    }
+
+    public static Vec planeLineIntersection(Vec planePoint, Vec planeNormal, Vec linePoint, Vec lineDirection) {
+        double denominator = planeNormal.dot(lineDirection);
+
+        if (Math.abs(denominator) < 0.01) {
+            return null;
+        }
+
+        double t = (planeNormal.dot(planePoint) - planeNormal.dot(linePoint)) / denominator;
+        return linePoint.add(lineDirection.mul(t));
+    }
+
+    public static ArrayList<Vec> interpolateBezier(Vec p1, Vec p2, Vec p3, Vec p4, double precision) {
+        ArrayList<Vec> result = new ArrayList<>();
+
+        double distance = p1.sub(p2).length() + p2.sub(p3).length() + p3.sub(p4).length();
+        double step = (1 / precision) / distance;
+
+        for (double t = 0; t < 1; t += step) {
+            double a = Math.pow(1 - t, 3);
+            double b = 3 * Math.pow(1 - t, 2) * t;
+            double c = 3 * (1 - t) * Math.pow(t, 2);
+            double d = Math.pow(t, 3);
+
+            result.add(p1.mul(a).add(p2.mul(b)).add(p3.mul(c)).add(p4.mul(d)));
+        }
+
+        return result;
+    }
+
+    public static ArrayList<Vec> interpolateDisk(Vec origin, Vec normal, double radius, double precision) {
+        ArrayList<Vec> result = new ArrayList<>();
+
+        Vec x = normal.cross(origin).normalize();
+        Vec z = normal.cross(x).normalize();
+
+        double step = 1 / precision;
+
+        for (double i = -radius; i <= radius; i += step) {
+            for (double j = -radius; j <= radius; j += step) {
+                Vec point = origin.add(x.mul(i)).add(z.mul(j));
+
+                if (origin.sub(point).length() < radius) {
+                    result.add(point);
+                }
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -301,5 +365,10 @@ public class Vec implements Comparable<Vec> {
     @Override
     public int hashCode() {
         return Objects.hash(x, y, z);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("x", x).add("y", y).add("z", z).toString();
     }
 }

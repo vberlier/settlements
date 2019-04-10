@@ -1,0 +1,165 @@
+package com.vberlier.settlements.generator;
+
+import com.vberlier.settlements.util.Point;
+import com.vberlier.settlements.util.Vec;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+
+import java.util.*;
+
+public class TerrainProcessor {
+    private final World world;
+    private int originX;
+    private int originZ;
+    private Position[][] terrain;
+
+    public TerrainProcessor(World world, int originX, int originZ, Position[][] terrain) {
+        this.world = world;
+        this.originX = originX;
+        this.originZ = originZ;
+        this.terrain = terrain;
+    }
+
+    public void flatten(Slot slot, Vec centerNormal, double slotRadius) {
+        Set<BlockPos> surface = new HashSet<>();
+
+        Position centerPosition = slot.getCenter();
+        Vec originalCenter = new Vec(centerPosition.getTerrainBlock());
+
+        for (Vec vec : Vec.interpolateDisk(originalCenter, centerNormal, slotRadius - 1, 6)) {
+            surface.add(vec.block());
+        }
+
+        for (Position edgePosition : slot.getConvexHull()) {
+            Vec edge = new Vec(edgePosition.getTerrainBlock());
+            Vec edgeNormal = edgePosition.getNormal();
+
+            Vec line = originalCenter.sub(edge);
+
+            if (line.length() < slotRadius) {
+                continue;
+            }
+
+            Vec projectedPoint = Vec.planeLineIntersection(originalCenter, centerNormal, edge, centerNormal);
+            Vec center = originalCenter.sub(originalCenter.sub(projectedPoint).normalize().mul(slotRadius));
+
+            double handleSize = center.sub(edge).length() / 3;
+
+            Vec centerIntersection = Vec.planeLineIntersection(center, centerNormal, edge, edgeNormal);
+            if (centerIntersection == null) {
+                centerIntersection = center.add(edgeNormal);
+            }
+
+            Vec edgeIntersection = Vec.planeLineIntersection(edge, edgeNormal, center, centerNormal);
+            if (edgeIntersection == null) {
+                edgeIntersection = edge.add(centerNormal);
+            }
+
+            Vec centerHandleDirection = center.sub(centerIntersection).normalize();
+            Vec edgeHandleDirection = edge.sub(edgeIntersection).normalize();
+
+            Vec centerControl = center.add(centerHandleDirection.mul(handleSize));
+            Vec edgeControl = edge.add(edgeHandleDirection.mul(handleSize));
+
+            for (Vec vec : Vec.interpolateBezier(edge, edgeControl, centerControl, center, 6)) {
+                surface.add(vec.block());
+            }
+        }
+
+        Map<Point, Set<Double>> heightsSets = new HashMap<>();
+
+        for (BlockPos block : surface) {
+            Point key = new Point(block.getX(), block.getZ());
+            Set<Double> heights = heightsSets.computeIfAbsent(key, k -> new HashSet<>());
+            heights.add((double) block.getY());
+        }
+
+        surface = new HashSet<>();
+
+        for (Map.Entry<Point, Set<Double>> entry : heightsSets.entrySet()) {
+            Point point = entry.getKey();
+            Set<Double> heights = entry.getValue();
+
+            surface.add(new BlockPos(point.x, heights.stream().mapToDouble(d -> d).average().getAsDouble(), point.y));
+        }
+
+        for (BlockPos block : surface) {
+            int x = block.getX();
+            int y = block.getY();
+            int z = block.getZ();
+
+            removeVegetation(x, z);
+            clearBlocksAbove(x, y, z);
+            fillBlocksBelow(x, y, z);
+        }
+    }
+
+    private void removeVegetation(int x, int z) {
+        BlockPos current = new BlockPos(x, world.getHeight(x, z), z);
+
+        while (current.getY() > 0) {
+            IBlockState state = world.getBlockState(current);
+            Block block = state.getBlock();
+
+            if (!block.isAir(state, world, current) && !block.isPassable(world, current) && !block.isFlammable(world, current, EnumFacing.UP)) {
+                break;
+            }
+
+            if (!world.containsAnyLiquid(new AxisAlignedBB(current))) {
+                world.setBlockToAir(current);
+            }
+
+            current = current.down();
+        }
+    }
+
+    private void clearBlocksAbove(int x, int y, int z) {
+        BlockPos current = new BlockPos(x, world.getHeight(x, z), z);
+
+        while (current.getY() > y) {
+            if (!world.containsAnyLiquid(new AxisAlignedBB(current))) {
+                world.setBlockToAir(current);
+            }
+            current = current.down();
+        }
+    }
+
+    private void fillBlocksBelow(int x, int y, int z) {
+        BlockPos current = new BlockPos(x, y, z);
+
+        do {
+            IBlockState state = world.getBlockState(current);
+            Block block = state.getBlock();
+
+            if (!block.isAir(state, world, current) && !block.isPassable(world, current) && !block.isFlammable(world, current, EnumFacing.UP)) {
+                break;
+            }
+
+            current = current.down();
+        } while (current.getY() > 0);
+
+        Position position = terrain[x - originX][z - originZ];
+        IBlockState state = position.getTerrainBlockState();
+        Block block = state.getBlock();
+
+        if (block.equals(Blocks.GRASS)) {
+            block = Blocks.DIRT;
+            state = block.getDefaultState();
+        }
+
+        for (int i = current.getY(); i < y; i++) {
+            world.setBlockState(new BlockPos(current.getX(), i, current.getZ()), state);
+        }
+
+        if (block.equals(Blocks.DIRT)) {
+            world.setBlockState(current, Blocks.GRASS.getDefaultState());
+        } else {
+            world.setBlockState(current, state);
+        }
+    }
+}
