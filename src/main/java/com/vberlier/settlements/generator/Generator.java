@@ -219,6 +219,11 @@ public class Generator {
                             continue;
                         }
 
+                        if (origin.getLiquids().size() > 0 != neighbor.getLiquids().size() > 0) {
+                            System.out.println(origin.getLiquids().size() + " vs " + neighbor.getLiquids().size());
+                            continue;
+                        }
+
                         nextBlocks.remove(neighbor);
                         availableBlocks.remove(neighbor);
                         surface.add(neighbor);
