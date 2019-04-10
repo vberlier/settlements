@@ -335,6 +335,10 @@ public class Generator {
 
     private void processGraph() {
         Queue<Slot> slotsQueue = new PriorityQueue<>(graph.nodes());
+        Set<Slot> houses = new HashSet<>();
+
+        TerrainProcessor terrainProcessor = new TerrainProcessor(world, originX, originZ, positions);
+        HouseBuilder houseBuilder = new HouseBuilder(world, graph);
 
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
@@ -345,9 +349,14 @@ public class Generator {
 
             // TODO: Don't use hardcoded house layout
 
-            // new HouseBuilder(world, graph).build(slot);
+            if (!slot.getCenter().containsLiquids()) {
+                terrainProcessor.flatten(slot, Vec.up, 3 * safeSlotRadius / 4);
+                houses.add(slot);
+            }
+        }
 
-            new TerrainProcessor(world, originX, originZ, positions).flatten(slot, Vec.up, 3 * safeSlotRadius / 4);
+        for (Slot slot : houses) {
+            houseBuilder.build(slot);
         }
     }
 
@@ -374,7 +383,7 @@ public class Generator {
         for (EndpointPair<Slot> edge : graph.edges()) {
             for (Point point : new Point(edge.nodeU().getCenter()).line(edge.nodeV().getCenter())) {
                 BlockPos pos = positions[(int) point.x][(int) point.y].getTerrainBlock();
-                world.setBlockState(new BlockPos(pos.getX(), world.getHeight(pos.getX(), pos.getZ()) - 1, pos.getZ()), Blocks.IRON_BLOCK.getDefaultState());
+                world.setBlockState(new BlockPos(pos.getX(), 100, pos.getZ()), Blocks.IRON_BLOCK.getDefaultState());
             }
         }
     }

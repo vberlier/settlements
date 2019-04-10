@@ -64,22 +64,13 @@ public class HouseBuilder {
         BlockPos baseSize = houseBase.getSize();
 
         StructureBoundingBox bb = spawnStructure(houseBase, centerBlock, orientation.rotation());
-        spawnAdjacent(bb, houseSmallExtension, orientation.inverse().rotation());
-        bb = spawnAdjacent(bb, houseSmallExtension, extensionOrientation.rotation());
-        bb = spawnAdjacent(bb, houseExtension, extensionOrientation.rotation());
-        spawnAdjacent(bb, houseSmallExtension, orientation.rotation());
+        spawnAdjacent(bb, houseSmallExtension, extensionOrientation.rotation());
 
-        bb = spawnStructure(houseBaseStilts, centerBlock.add(0, -houseBaseStilts.getSize().getY(), 0), orientation.rotation());
-        spawnAdjacent(bb, houseSmallExtensionStilts, orientation.inverse().rotation());
-        bb = spawnAdjacent(bb, houseSmallExtensionStilts, extensionOrientation.rotation());
-        bb = spawnAdjacent(bb, houseExtensionStilts, extensionOrientation.rotation());
-        spawnAdjacent(bb, houseSmallExtensionStilts, orientation.rotation());
+        bb = spawnStructure(houseBaseFoundation, centerBlock.add(0, -houseBaseFoundation.getSize().getY(), 0), orientation.rotation());
+        spawnAdjacent(bb, houseSmallExtensionFoundation, extensionOrientation.rotation());
 
         bb = spawnStructure(houseBaseRoof, centerBlock.add(0, baseSize.getY() - 1, 0), orientation.rotation());
-        spawnAdjacent(bb, houseSmallExtensionRoof, orientation.inverse().rotation(), 2);
-        bb = spawnAdjacent(bb, houseSmallExtensionRoof, extensionOrientation.rotation(), 2);
-        bb = spawnAdjacent(bb, houseExtensionRoof, extensionOrientation.rotation(), 2);
-        spawnAdjacent(bb, houseSmallExtensionRoof, orientation.rotation(), 2);
+        spawnAdjacent(bb, houseSmallExtensionRoof, extensionOrientation.rotation(), 2);
     }
 
     private StructureBoundingBox spawnStructure(Template template, BlockPos pos, Rotation rotation) {
