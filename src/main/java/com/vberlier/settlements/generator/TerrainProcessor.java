@@ -81,11 +81,23 @@ public class TerrainProcessor {
 
         surface = new HashSet<>();
 
+        int minX = (int) originalCenter.x;
+        int minZ = (int) originalCenter.z;
+        int maxX = minX;
+        int maxZ = minZ;
+
         for (Map.Entry<Point, Set<Double>> entry : heightsSets.entrySet()) {
             Point point = entry.getKey();
             Set<Double> heights = entry.getValue();
 
-            surface.add(new BlockPos(point.x, heights.stream().mapToDouble(d -> d).average().getAsDouble(), point.y));
+            BlockPos block = new BlockPos(point.x, heights.stream().mapToDouble(d -> d).average().getAsDouble(), point.y);
+
+            surface.add(block);
+
+            minX = Math.min(minX, block.getX());
+            minZ = Math.min(minZ, block.getZ());
+            maxX = Math.max(maxX, block.getX());
+            maxZ = Math.max(maxZ, block.getZ());
         }
 
         for (BlockPos block : surface) {
@@ -96,6 +108,26 @@ public class TerrainProcessor {
             removeVegetation(x, z);
             clearBlocksAbove(x, y, z);
             fillBlocksBelow(x, y, z);
+        }
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                int y = world.getHeight(x, z);
+
+                int neighbors = 0;
+
+                for (int[] offset : Position.neighbors) {
+                    BlockPos neighbor = new BlockPos(x +  offset[0], y, z + offset[1]);
+
+                    if (!world.isAirBlock(neighbor)) {
+                        neighbors++;
+                    }
+                }
+
+                if (neighbors < 2) {
+                    world.setBlockToAir(new BlockPos(x, y, z));
+                }
+            }
         }
     }
 
