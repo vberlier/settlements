@@ -178,6 +178,8 @@ public class TerrainProcessor {
         BlockPos current = new BlockPos(x, world.getHeight(x, z), z);
 
         while (current.getY() > y) {
+            // TODO: Count log blocks of each type to find the most common wood type
+
             if (!world.containsAnyLiquid(new AxisAlignedBB(current))) {
                 world.setBlockToAir(current);
             }

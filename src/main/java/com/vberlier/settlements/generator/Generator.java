@@ -343,7 +343,7 @@ public class Generator {
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
 
-            // TODO: Treat slots differently depending on the water content, vegetation, steepness...
+            // TODO: Add fields
 
             // TODO: Terrain cleanup & fix water problem
 

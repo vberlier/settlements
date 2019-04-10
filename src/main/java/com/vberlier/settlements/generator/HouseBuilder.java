@@ -3,12 +3,10 @@ package com.vberlier.settlements.generator;
 import com.google.common.graph.ValueGraph;
 import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Vec;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.gen.structure.template.PlacementSettings;
 import net.minecraft.world.gen.structure.template.Template;
@@ -16,8 +14,6 @@ import net.minecraft.world.gen.structure.template.TemplateManager;
 
 public class HouseBuilder {
     private final World world;
-    private final WorldServer worldServer;
-    private final MinecraftServer minecraftServer;
     private final TemplateManager templateManager;
     private ValueGraph<Slot, Integer> graph;
 
@@ -36,9 +32,7 @@ public class HouseBuilder {
 
     public HouseBuilder(World world, ValueGraph<Slot, Integer> graph) {
         this.world = world;
-        worldServer = (WorldServer) world;
-        minecraftServer = worldServer.getMinecraftServer();
-        templateManager = worldServer.getStructureTemplateManager();
+        templateManager = world.getSaveHandler().getStructureTemplateManager();
         this.graph = graph;
 
         houseBase = getTemplate("house_base");
@@ -53,6 +47,10 @@ public class HouseBuilder {
         houseSmallExtensionFoundation = getTemplate("house_small_extension_foundation");
         houseSmallExtensionStilts = getTemplate("house_small_extension_stilts");
         houseSmallExtensionRoof = getTemplate("house_small_extension_roof");
+
+        for (Template template : new Template[]{houseBase, houseBaseFoundation, houseBaseStilts, houseBaseRoof, houseExtension, houseExtensionFoundation, houseExtensionStilts, houseExtensionRoof, houseSmallExtension, houseSmallExtensionFoundation, houseSmallExtensionStilts, houseSmallExtensionRoof}) {
+            System.out.println("template: " + template.getAuthor() + " " + template.getSize());
+        }
     }
 
     public void build(Slot slot) {
@@ -66,11 +64,15 @@ public class HouseBuilder {
         StructureBoundingBox bb = spawnStructure(houseBase, centerBlock, orientation.rotation());
         spawnAdjacent(bb, houseSmallExtension, extensionOrientation.rotation());
 
+        // TODO: Use stilts for steep surfaces
+
         bb = spawnStructure(houseBaseFoundation, centerBlock.add(0, -houseBaseFoundation.getSize().getY(), 0), orientation.rotation());
         spawnAdjacent(bb, houseSmallExtensionFoundation, extensionOrientation.rotation());
 
         bb = spawnStructure(houseBaseRoof, centerBlock.add(0, baseSize.getY() - 1, 0), orientation.rotation());
         spawnAdjacent(bb, houseSmallExtensionRoof, extensionOrientation.rotation(), 2);
+
+        // TODO: Replace the default wood type with the most common
     }
 
     private StructureBoundingBox spawnStructure(Template template, BlockPos pos, Rotation rotation) {
@@ -112,6 +114,6 @@ public class HouseBuilder {
     }
 
     private Template getTemplate(String name) {
-        return templateManager.getTemplate(minecraftServer, new ResourceLocation(SettlementsMod.MOD_ID, name));
+        return templateManager.getTemplate(world.getMinecraftServer(), new ResourceLocation(SettlementsMod.MOD_ID, name));
     }
 }
