@@ -118,24 +118,8 @@ public class TerrainProcessor {
             fillBlocksBelow(x, y, z);
         }
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                int y = world.getHeight(x, z);
-
-                int neighbors = 0;
-
-                for (int[] offset : Position.neighbors) {
-                    BlockPos neighbor = new BlockPos(x + offset[0], y, z + offset[1]);
-
-                    if (!world.isAirBlock(neighbor)) {
-                        neighbors++;
-                    }
-                }
-
-                if (neighbors < 2) {
-                    world.setBlockToAir(new BlockPos(x, y, z));
-                }
-            }
+        for (int i = 0; i < 4; i++) {
+            cleanupBlocks(minX, minZ, maxX, maxZ);
         }
     }
 
@@ -200,6 +184,47 @@ public class TerrainProcessor {
             world.setBlockState(current, Blocks.GRASS.getDefaultState());
         } else {
             world.setBlockState(current, state);
+        }
+    }
+
+    private void cleanupBlocks(int minX, int minZ, int maxX, int maxZ) {
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                int y = world.getHeight(x, z);
+
+                int neighbors = 0;
+
+                for (int[] offset : Position.neighbors) {
+                    BlockPos neighbor = new BlockPos(x + offset[0], y, z + offset[1]);
+
+                    if (!world.isAirBlock(neighbor)) {
+                        neighbors++;
+                    }
+                }
+
+                if (neighbors < 2) {
+                    world.setBlockToAir(new BlockPos(x, y, z));
+                    continue;
+                }
+
+                y++;
+
+                int upperNeighbors = 0;
+                IBlockState state = Blocks.AIR.getDefaultState();
+
+                for (int[] offset : Position.neighbors) {
+                    BlockPos neighbor = new BlockPos(x + offset[0], y, z + offset[1]);
+
+                    if (!world.isAirBlock(neighbor)) {
+                        upperNeighbors++;
+                        state = world.getBlockState(neighbor);
+                    }
+                }
+
+                if (upperNeighbors > 2) {
+                    world.setBlockState(new BlockPos(x, y, z), state);
+                }
+            }
         }
     }
 }
