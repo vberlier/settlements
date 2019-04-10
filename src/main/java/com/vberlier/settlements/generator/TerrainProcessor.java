@@ -145,6 +145,11 @@ public class TerrainProcessor {
             fillBlocksBelow(x, y, z);
         }
 
+        for (Position position : slot.getConvexHull()) {
+            BlockPos originalTerrain = position.getTerrainBlock();
+            cleanupAdjacentVegetation(originalTerrain.getX(), originalTerrain.getZ());
+        }
+
         for (int i = 0; i < 7; i++) {
             cleanupBlocks(minX, minZ, maxX, maxZ);
         }
@@ -257,6 +262,44 @@ public class TerrainProcessor {
 
                 if (world.getBlockState(block).getBlock().equals(Blocks.DIRT)) {
                     world.setBlockState(block, Blocks.GRASS.getDefaultState());
+                }
+            }
+        }
+    }
+
+    private void cleanupAdjacentVegetation(int x, int z) {
+        BlockPos current = new BlockPos(x, world.getHeight(x, z), z);
+        IBlockState state = world.getBlockState(current);
+        Block block = state.getBlock();
+
+        while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP)) {
+            world.setBlockToAir(current);
+
+            current = current.down();
+            state = world.getBlockState(current);
+            block = state.getBlock();
+        }
+
+        for (int i = -1; i < 2; i++) {
+            for (int j = -1; j < 2; j++) {
+                if (i == 0 && j == 0) {
+                    continue;
+                }
+
+                current = new BlockPos(x + i, world.getHeight(x + i, z + j), z + j);
+
+                state = world.getBlockState(current);
+                block = state.getBlock();
+
+                while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP)) {
+                    if (block.isWood(world, current)) {
+                        cleanupAdjacentVegetation(current.getX(), current.getZ());
+                        break;
+                    }
+
+                    current = current.down();
+                    state = world.getBlockState(current);
+                    block = state.getBlock();
                 }
             }
         }

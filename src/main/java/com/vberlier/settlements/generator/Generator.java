@@ -341,8 +341,6 @@ public class Generator {
 
             // TODO: Treat slots differently depending on the water content, vegetation, steepness...
 
-            // TODO: Vegetation removal
-
             // TODO: Terrain cleanup & fix water problem
 
             // TODO: Don't use hardcoded house layout
