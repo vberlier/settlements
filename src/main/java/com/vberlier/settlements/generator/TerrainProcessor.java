@@ -39,6 +39,12 @@ public class TerrainProcessor {
 
         for (Position edgePosition : slot.getConvexHull()) {
             Vec samplingOrigin = new Vec(edgePosition.getTerrainBlock());
+            Vec centerDirection = originalCenter.sub(samplingOrigin).normalize();
+
+            while (edgePosition.getLiquids().size() > 0 != centerPosition.getLiquids().size() > 0) {
+                samplingOrigin = samplingOrigin.add(centerDirection);
+                edgePosition = terrain[(int) Math.round(samplingOrigin.x - originX)][(int) Math.round(samplingOrigin.z - originZ)];
+            }
 
             for (Vec sample : samples) {
                 Vec edge = samplingOrigin.add(sample);
