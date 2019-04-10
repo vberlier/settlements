@@ -13,6 +13,8 @@ import net.minecraft.world.World;
 import java.util.*;
 
 public class TerrainProcessor {
+    private static Vec[] samples = {new Vec(-0.25, 0, -0.25), new Vec(0.25, 0, -0.25), new Vec(0.25, 0, 0.25), new Vec(-0.25, 0, 0.25)};
+
     private final World world;
     private int originX;
     private int originZ;
@@ -36,38 +38,44 @@ public class TerrainProcessor {
         }
 
         for (Position edgePosition : slot.getConvexHull()) {
-            Vec edge = new Vec(edgePosition.getTerrainBlock());
-            Vec edgeNormal = edgePosition.getNormal();
+            Vec samplingOrigin = new Vec(edgePosition.getTerrainBlock());
 
-            Vec line = originalCenter.sub(edge);
+            for (Vec sample : samples) {
+                Vec edge = samplingOrigin.add(sample);
+                Vec edgeNormal = edgePosition.getNormal();
 
-            if (line.length() < slotRadius) {
-                continue;
-            }
+                Vec line = originalCenter.sub(edge);
 
-            Vec projectedPoint = Vec.planeLineIntersection(originalCenter, centerNormal, edge, centerNormal);
-            Vec center = originalCenter.sub(originalCenter.sub(projectedPoint).normalize().mul(slotRadius));
+                if (line.length() < slotRadius) {
+                    continue;
+                }
 
-            double handleSize = center.sub(edge).length() / 3;
+                Vec projectedPoint = Vec.planeLineIntersection(originalCenter, centerNormal, edge, centerNormal);
+                Vec center = originalCenter.sub(originalCenter.sub(projectedPoint).normalize().mul(slotRadius));
 
-            Vec centerIntersection = Vec.planeLineIntersection(center, centerNormal, edge, edgeNormal);
-            if (centerIntersection == null) {
-                centerIntersection = center.add(edgeNormal);
-            }
+                double handleSize = center.sub(edge).length() / 3;
 
-            Vec edgeIntersection = Vec.planeLineIntersection(edge, edgeNormal, center, centerNormal);
-            if (edgeIntersection == null) {
-                edgeIntersection = edge.add(centerNormal);
-            }
+                Vec centerIntersection = Vec.planeLineIntersection(center, centerNormal, edge, edgeNormal);
+                if (centerIntersection == null) {
+                    System.out.println("No intersection");
+                    continue;
+                }
 
-            Vec centerHandleDirection = center.sub(centerIntersection).normalize();
-            Vec edgeHandleDirection = edge.sub(edgeIntersection).normalize();
+                Vec edgeIntersection = Vec.planeLineIntersection(edge, edgeNormal, center, centerNormal);
+                if (edgeIntersection == null) {
+                    System.out.println("No intersection");
+                    continue;
+                }
 
-            Vec centerControl = center.add(centerHandleDirection.mul(handleSize));
-            Vec edgeControl = edge.add(edgeHandleDirection.mul(handleSize));
+                Vec centerHandleDirection = center.sub(centerIntersection).normalize();
+                Vec edgeHandleDirection = edge.sub(edgeIntersection).normalize();
 
-            for (Vec vec : Vec.interpolateBezier(edge, edgeControl, centerControl, center, 6)) {
-                surface.add(vec.block());
+                Vec centerControl = center.add(centerHandleDirection.mul(handleSize));
+                Vec edgeControl = edge.add(edgeHandleDirection.mul(handleSize));
+
+                for (Vec vec : Vec.interpolateBezier(edge, edgeControl, centerControl, center, 6)) {
+                    surface.add(vec.block());
+                }
             }
         }
 
@@ -117,7 +125,7 @@ public class TerrainProcessor {
                 int neighbors = 0;
 
                 for (int[] offset : Position.neighbors) {
-                    BlockPos neighbor = new BlockPos(x +  offset[0], y, z + offset[1]);
+                    BlockPos neighbor = new BlockPos(x + offset[0], y, z + offset[1]);
 
                     if (!world.isAirBlock(neighbor)) {
                         neighbors++;
