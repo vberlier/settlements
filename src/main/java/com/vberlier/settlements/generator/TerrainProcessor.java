@@ -154,6 +154,23 @@ public class TerrainProcessor {
         for (int i = 0; i < 4; i++) {
             cleanupBlocks(minX, minZ, maxX, maxZ);
         }
+
+        for (int i = 0; i < surfaceSizeX; i++) {
+            for (int j = 0; j < surfaceSizeZ; j++) {
+                int x = minX + i;
+                int z = minZ + j;
+                int y =  world.getHeight(x, z);
+
+                heightsArray[i][j] = y;
+                BlockPos block = new BlockPos(x, y, z);
+
+                Position position  = terrain[x - originX][z - originZ];
+                position.setTerrainBlock(block);
+                position.setTerrainBlockState(world.getBlockState(block));
+            }
+        }
+
+        recomputeNormals(minX, minZ, heightsArray);
     }
 
     private void removeVegetation(int x, int z) {
@@ -265,6 +282,56 @@ public class TerrainProcessor {
                 if (upperNeighbors > 2) {
                     world.setBlockState(new BlockPos(x, y, z), state);
                 }
+            }
+        }
+    }
+
+    private void recomputeNormals(int minX, int minZ, int[][] heightsArray) {
+        int verticesSizeX = heightsArray.length - 1;
+        int verticesSizeZ = heightsArray[0].length - 1;
+        Vec[][] vertices = new Vec[verticesSizeX][verticesSizeZ];
+
+        Vec[][] firstPass = vertices.clone();
+
+        for (int i = 0; i < verticesSizeX; i++) {
+            for (int j = 0; j < verticesSizeZ; j++) {
+                Vec neighbors = Vec.zero;
+
+                for (int x = 0; x < 2; x++) {
+                    for (int z = 0; z < 2; z++) {
+                        neighbors = neighbors.add(new Vec(minX + i + x, heightsArray[i + x][j + z], minZ + j + z));
+                    }
+                }
+
+                firstPass[i][j] = neighbors.div(4);
+            }
+        }
+
+        smoothPass(firstPass, vertices);
+
+        for (int i = 1; i < verticesSizeX; i++) {
+            for (int j = 1; j < verticesSizeZ; j++) {
+                Vec normal = Vec.normal(vertices[i - 1][j - 1], vertices[i - 1][j], vertices[i][j], vertices[i][j - 1]).normalize();
+                terrain[i + minX - originX][j + minZ - originZ].setNormal(normal);
+            }
+        }
+    }
+
+    public static void smoothPass(Vec[][] input, Vec[][] result) {
+        int sizeX = result.length;
+        int sizeZ = result[0].length;
+
+        for (int i = 1; i < sizeX - 1; i++) {
+            for (int j = 1; j < sizeZ - 1; j++) {
+                Vec neighbors = Vec.zero;
+
+                for (int x = -1; x < 2; x++) {
+                    for (int z = -1; z < 2; z++) {
+                        neighbors = neighbors.add(input[i + x][j + z]);
+                    }
+                }
+
+                result[i][j] = neighbors.div(9);
             }
         }
     }

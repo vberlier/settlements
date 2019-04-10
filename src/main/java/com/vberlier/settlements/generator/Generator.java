@@ -147,19 +147,7 @@ public class Generator {
             }
         }
 
-        for (int i = 1; i < verticesSizeX - 1; i++) {
-            for (int j = 1; j < verticesSizeZ - 1; j++) {
-                Vec neighbors = Vec.zero;
-
-                for (int x = -1; x < 2; x++) {
-                    for (int z = -1; z < 2; z++) {
-                        neighbors = neighbors.add(firstPass[i + x][j + z]);
-                    }
-                }
-
-                vertices[i][j] = neighbors.div(9);
-            }
-        }
+        TerrainProcessor.smoothPass(firstPass, vertices);
     }
 
     private void computeNormals() {
