@@ -167,7 +167,15 @@ public class TerrainProcessor {
             current = current.down();
         } while (current.getY() > 0);
 
-        Position position = terrain[x - originX][z - originZ];
+        Position position;
+
+        try {
+            position = terrain[x - originX][z - originZ];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("Couldn't access position object: x = " + x + ", z = " + z);
+            return;
+        }
+
         IBlockState state = position.getTerrainBlockState();
         Block block = state.getBlock();
 

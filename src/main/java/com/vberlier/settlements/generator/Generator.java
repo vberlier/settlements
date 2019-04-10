@@ -351,7 +351,7 @@ public class Generator {
 
             // TODO: Vegetation removal
 
-            // TODO: Terrain cleanup
+            // TODO: Terrain cleanup & fix water problem
 
             // TODO: Don't use hardcoded house layout
 
