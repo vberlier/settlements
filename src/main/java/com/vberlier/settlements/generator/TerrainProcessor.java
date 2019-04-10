@@ -108,10 +108,37 @@ public class TerrainProcessor {
             maxZ = Math.max(maxZ, block.getZ());
         }
 
+        int surfaceSizeX = maxX - minX + 1;
+        int surfaceSizeZ = maxZ - minZ + 1;
+
+        int[][] heightsArray = new int[surfaceSizeX][surfaceSizeZ];
+
+        for (BlockPos block : surface) {
+            heightsArray[block.getX() - minX][block.getZ() - minZ] = block.getY();
+        }
+
         for (BlockPos block : surface) {
             int x = block.getX();
-            int y = block.getY();
             int z = block.getZ();
+
+            int heightSum = 0;
+            int totalHeights = 0;
+
+            for (int i = -1; i < 2; i++) {
+                for (int j = -1; j < 2; j++) {
+                    int a = Math.max(0, Math.min(x - minX + i, surfaceSizeX - 1));
+                    int b = Math.max(0, Math.min(z - minZ + j, surfaceSizeZ - 1));
+
+                    int height = heightsArray[a][b];
+
+                    if (height > 0) {
+                        heightSum += height;
+                        totalHeights++;
+                    }
+                }
+            }
+
+            int y = heightSum / totalHeights;
 
             removeVegetation(x, z);
             clearBlocksAbove(x, y, z);
