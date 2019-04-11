@@ -2,7 +2,7 @@ package com.vberlier.settlements.generator;
 
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
-import net.minecraft.block.Block;
+import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
@@ -19,6 +19,8 @@ public class TerrainProcessor {
     private int originX;
     private int originZ;
     private Position[][] terrain;
+
+    private Map<BlockPlanks.EnumType, Integer> woodVariants = new HashMap<>();
 
     public TerrainProcessor(World world, int originX, int originZ, Position[][] terrain) {
         this.world = world;
@@ -166,6 +168,16 @@ public class TerrainProcessor {
                 break;
             }
 
+            if (block instanceof BlockOldLog) {
+                BlockPlanks.EnumType variant = state.getValue(BlockOldLog.VARIANT);
+                woodVariants.put(variant, woodVariants.getOrDefault(variant, 0) + 1);
+            }
+
+            if (block instanceof BlockNewLog) {
+                BlockPlanks.EnumType variant = state.getValue(BlockNewLog.VARIANT);
+                woodVariants.put(variant, woodVariants.getOrDefault(variant, 0) + 1);
+            }
+
             if (!world.containsAnyLiquid(new AxisAlignedBB(current))) {
                 world.setBlockToAir(current);
             }
@@ -178,8 +190,6 @@ public class TerrainProcessor {
         BlockPos current = new BlockPos(x, world.getHeight(x, z), z);
 
         while (current.getY() > y) {
-            // TODO: Count log blocks of each type to find the most common wood type
-
             if (!world.containsAnyLiquid(new AxisAlignedBB(current))) {
                 world.setBlockToAir(current);
             }
@@ -305,6 +315,24 @@ public class TerrainProcessor {
                 }
             }
         }
+    }
+
+    public Map<BlockPlanks.EnumType, Integer> getWoodVariants() {
+        return woodVariants;
+    }
+
+    public BlockPlanks.EnumType mostCommonWoodVariant() {
+        BlockPlanks.EnumType variant = BlockPlanks.EnumType.OAK;
+        int count = 0;
+
+        for (Map.Entry<BlockPlanks.EnumType, Integer> entry : woodVariants.entrySet()) {
+            if (entry.getValue() > count) {
+                variant = entry.getKey();
+                count = entry.getValue();
+            }
+        }
+
+        return variant;
     }
 
     public static void smoothPass(Vec[][] input, Vec[][] result) {

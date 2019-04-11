@@ -7,6 +7,7 @@ import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockColored;
+import net.minecraft.block.BlockPlanks;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
@@ -338,12 +339,15 @@ public class Generator {
         Set<Slot> houses = new HashSet<>();
 
         TerrainProcessor terrainProcessor = new TerrainProcessor(world, originX, originZ, positions);
-        HouseBuilder houseBuilder = new HouseBuilder(world, graph);
 
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
 
             // TODO: Add fields
+
+            // TODO: Add bridges
+
+            // TODO; Add paths
 
             // TODO: Terrain cleanup & fix water problem
 
@@ -354,6 +358,8 @@ public class Generator {
                 houses.add(slot);
             }
         }
+
+        HouseBuilder houseBuilder = new HouseBuilder(world, graph, terrainProcessor.mostCommonWoodVariant());
 
         for (Slot slot : houses) {
             houseBuilder.build(slot);
