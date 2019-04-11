@@ -16,7 +16,7 @@ import net.minecraft.world.gen.structure.template.Template;
 import net.minecraft.world.gen.structure.template.TemplateManager;
 
 public class StructureBuilder {
-    private final World world;
+    protected final World world;
     private final TemplateManager templateManager;
     private BlockPlanks.EnumType woodVariant;
 

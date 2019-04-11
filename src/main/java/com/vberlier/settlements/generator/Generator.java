@@ -352,7 +352,7 @@ public class Generator {
 
             // TODO: Don't use hardcoded house layout
 
-            if (!slot.getCenter().containsLiquids()) {
+            if (slot.getCenter().getLiquids().isEmpty()) {
                 terrainProcessor.flatten(slot, Vec.up, 3 * safeSlotRadius / 4);
                 houses.add(slot);
             }
@@ -361,7 +361,7 @@ public class Generator {
         HouseBuilder houseBuilder = new HouseBuilder(world, graph, terrainProcessor.mostCommonWoodVariant());
 
         for (Slot slot : houses) {
-            houseBuilder.build(slot);
+            houseBuilder.build(slot, 4 * safeSlotRadius / 3);
         }
     }
 
