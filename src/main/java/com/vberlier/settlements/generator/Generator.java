@@ -7,7 +7,6 @@ import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockColored;
-import net.minecraft.block.BlockPlanks;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
