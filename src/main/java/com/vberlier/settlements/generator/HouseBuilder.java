@@ -55,8 +55,8 @@ public class HouseBuilder extends StructureBuilder {
         stiltsHeight = houseBaseStilts.getSize().getY();
         roofHeight = houseBaseRoof.getSize().getY();
 
-        extensionLength = houseExtension.getSize().getX();
-        smallExtensionLength = houseSmallExtension.getSize().getX();
+        extensionLength = houseExtensionRoof.getSize().getX() - 1;
+        smallExtensionLength = houseSmallExtensionRoof.getSize().getX() - 1;
     }
 
     public void build(Slot slot, double maxRadius) {

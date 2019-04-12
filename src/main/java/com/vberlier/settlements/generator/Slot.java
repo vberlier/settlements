@@ -156,7 +156,7 @@ public class Slot implements Comparable<Slot> {
     }
 
     public double getDryness() {
-        return 1 - (double) liquidBlocks.size() / (double) surface.length;
+        return Math.pow(1 - (double) liquidBlocks.size() / (double) surface.length, 2);
     }
 
     public Position[] getSurface() {

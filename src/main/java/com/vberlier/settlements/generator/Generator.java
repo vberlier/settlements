@@ -361,7 +361,7 @@ public class Generator {
         HouseBuilder houseBuilder = new HouseBuilder(world, graph, terrainProcessor.mostCommonWoodVariant());
 
         for (Slot slot : houses) {
-            houseBuilder.build(slot, 4 * safeSlotRadius / 3);
+            houseBuilder.build(slot, 5 * safeSlotRadius / 3);
         }
     }
 
