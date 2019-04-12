@@ -57,26 +57,25 @@ public class StructureBuilder {
     }
 
     public StructureBoundingBox spawnAdjacent(StructureBoundingBox boundingBox, Template template, Rotation rotation, int inset) {
-        BlockPos pos;
+        BlockPos pos = adjacentBlock(boundingBox, rotation,  template.getSize().getX() / 2 - inset);
+        return spawnStructure(template, pos, rotation);
+    }
 
-        int offset = template.getSize().getX() / 2 - inset;
+    public static BlockPos adjacentBlock(StructureBoundingBox boundingBox, Rotation rotation) {
+        return adjacentBlock(boundingBox, rotation, 0);
+    }
 
+    public static BlockPos adjacentBlock(StructureBoundingBox boundingBox, Rotation rotation, int offset) {
         switch (rotation) {
             case NONE:
-                pos = new BlockPos(boundingBox.maxX + offset, boundingBox.minY, boundingBox.minZ + boundingBox.getZSize() / 2);
-                break;
+                return new BlockPos(boundingBox.maxX + offset, boundingBox.minY, boundingBox.minZ + boundingBox.getZSize() / 2);
             case CLOCKWISE_90:
-                pos = new BlockPos(boundingBox.maxX - boundingBox.getXSize() / 2, boundingBox.minY, boundingBox.maxZ + offset);
-                break;
+                return new BlockPos(boundingBox.maxX - boundingBox.getXSize() / 2, boundingBox.minY, boundingBox.maxZ + offset);
             case CLOCKWISE_180:
-                pos = new BlockPos(boundingBox.minX - offset, boundingBox.minY, boundingBox.maxZ - boundingBox.getZSize() / 2);
-                break;
+                return new BlockPos(boundingBox.minX - offset, boundingBox.minY, boundingBox.maxZ - boundingBox.getZSize() / 2);
             default:
-                pos = new BlockPos(boundingBox.minX + boundingBox.getXSize() / 2, boundingBox.minY, boundingBox.minZ - offset);
-                break;
+                return new BlockPos(boundingBox.minX + boundingBox.getXSize() / 2, boundingBox.minY, boundingBox.minZ - offset);
         }
-
-        return spawnStructure(template, pos, rotation);
     }
 
     public Template getTemplate(String name) {
@@ -235,6 +234,6 @@ public class StructureBuilder {
             changed = expandNorth || expandSouth || expandWest || expandEast;
         }
 
-        return new StructureBoundingBox(minX, y, minZ, maxX, y, maxZ);
+        return new StructureBoundingBox(minX, 0, minZ, maxX, 255, maxZ);
     }
 }

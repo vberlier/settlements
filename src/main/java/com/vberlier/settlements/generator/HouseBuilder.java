@@ -3,7 +3,7 @@ package com.vberlier.settlements.generator;
 import com.google.common.graph.ValueGraph;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.*;
-import net.minecraft.init.Blocks;
+import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
@@ -30,6 +30,9 @@ public class HouseBuilder extends StructureBuilder {
     private final int stiltsHeight;
     private final int roofHeight;
 
+    private final int extensionLength;
+    private final int smallExtensionLength;
+
     public HouseBuilder(World world, ValueGraph<Slot, Integer> graph, BlockPlanks.EnumType woodVariant) {
         super(world, woodVariant);
         this.graph = graph;
@@ -51,6 +54,9 @@ public class HouseBuilder extends StructureBuilder {
         foundationHeight = houseBaseFoundation.getSize().getY();
         stiltsHeight = houseBaseStilts.getSize().getY();
         roofHeight = houseBaseRoof.getSize().getY();
+
+        extensionLength = houseExtension.getSize().getX();
+        smallExtensionLength = houseSmallExtension.getSize().getX();
     }
 
     public void build(Slot slot, double maxRadius) {
@@ -59,25 +65,72 @@ public class HouseBuilder extends StructureBuilder {
         Vec orientation = slot.getOrientation(graph);
         Vec extensionOrientation = (orientation.axis() == Vec.Axis.X ? orientation.project(Vec.Axis.Z) : orientation.project(Vec.Axis.X)).mul(-1);
 
-        StructureBoundingBox availableSpace = computeAvailableSpace(centerBlock.add(0, 2 * wallsHeight / 3, 0), maxRadius);
+        Vec line = slot.getNormal().cross(Vec.up);
+        double uprightFactor = line.length() > 0.01 ? Math.pow(slot.getNormal().cross(line).normalize().project(Vec.Axis.X, Vec.Axis.Z).length(), 2) : 1;
 
-        for (int x = availableSpace.minX; x < availableSpace.maxX; x++) {
-            for (int z = availableSpace.minZ; z < availableSpace.maxZ; z++) {
-                world.setBlockState(new BlockPos(x, centerBlock.getY() + 2 * wallsHeight / 3, z), Blocks.STAINED_GLASS.getDefaultState());
+        StructureBoundingBox availableSpace = computeAvailableSpace(centerBlock.add(0, 2 * wallsHeight / 3, 0), maxRadius * uprightFactor);
+
+        StructureBoundingBox walls = spawnStructure(houseBase, centerBlock, orientation.rotation());
+        StructureBoundingBox foundation = spawnStructure(houseBaseFoundation, centerBlock.add(0, -foundationHeight, 0), orientation.rotation());
+        StructureBoundingBox roof = spawnStructure(houseBaseRoof, centerBlock.add(0, wallsHeight - 1, 0), orientation.rotation());
+
+        Vec[] orientationsArray = {
+                extensionOrientation,
+                orientation,
+                extensionOrientation.mul(-1),
+                orientation.mul(-1)
+        };
+
+        int n = (int) (5 * uprightFactor) + world.rand.nextInt(2);
+
+        for (int i = 0; i < orientationsArray.length; i++) {
+            Rotation rotation = orientationsArray[i].rotation();
+
+            if (n > 3 && !rotation.equals(orientation.rotation()) && availableSpace.isVecInside(adjacentBlock(walls, rotation, smallExtensionLength + extensionLength))) {
+                StructureBoundingBox[] boxes = spawnSmallExtension(walls, foundation, roof, rotation);
+                boxes = spawnExtension(boxes[0], boxes[1], boxes[2], rotation);
+                n -= 3;
+
+                Rotation angleRotation = orientationsArray[(i + 1) % orientationsArray.length].rotation();
+
+                if (n > 2 && availableSpace.isVecInside(adjacentBlock(boxes[0], angleRotation, extensionLength)) && world.rand.nextBoolean()) {
+                    spawnExtension(boxes[0], boxes[1], boxes[2], angleRotation);
+                    i++;
+                    n -= 2;
+                } else if (availableSpace.isVecInside(adjacentBlock(boxes[0], angleRotation, smallExtensionLength))) {
+                    spawnSmallExtension(boxes[0], boxes[1], boxes[2], angleRotation);
+                    i++;
+                    n--;
+                }
+            } else if (n > 2 && !rotation.equals(orientation.rotation()) && availableSpace.isVecInside(adjacentBlock(walls, rotation, extensionLength))) {
+                spawnExtension(walls, foundation, roof, rotation);
+                n -= 2;
+            } else if (availableSpace.isVecInside(adjacentBlock(walls, rotation, smallExtensionLength))) {
+                spawnSmallExtension(walls, foundation, roof, rotation);
+                n--;
+            }
+
+            if (n <= 0) {
+                break;
             }
         }
 
-        StructureBoundingBox bb = spawnStructure(houseBase, centerBlock, orientation.rotation());
-        spawnAdjacent(bb, houseSmallExtension, extensionOrientation.rotation());
-
-        // TODO: Use stilts for steep surfaces
-
-        bb = spawnStructure(houseBaseFoundation, centerBlock.add(0, -foundationHeight, 0), orientation.rotation());
-        spawnAdjacent(bb, houseSmallExtensionFoundation, extensionOrientation.rotation());
-
-        bb = spawnStructure(houseBaseRoof, centerBlock.add(0, wallsHeight - 1, 0), orientation.rotation());
-        spawnAdjacent(bb, houseSmallExtensionRoof, extensionOrientation.rotation(), 2);
-
         rotateColor();
+    }
+
+    private StructureBoundingBox[] spawnSmallExtension(StructureBoundingBox walls, StructureBoundingBox foundation, StructureBoundingBox roof, Rotation rotation) {
+        return new StructureBoundingBox[]{
+                spawnAdjacent(walls, houseSmallExtension, rotation),
+                spawnAdjacent(foundation, houseSmallExtensionFoundation, rotation),
+                spawnAdjacent(roof, houseSmallExtensionRoof, rotation, 2)
+        };
+    }
+
+    private StructureBoundingBox[] spawnExtension(StructureBoundingBox walls, StructureBoundingBox foundation, StructureBoundingBox roof, Rotation rotation) {
+        return new StructureBoundingBox[]{
+                spawnAdjacent(walls, houseExtension, rotation),
+                spawnAdjacent(foundation, houseExtensionFoundation, rotation),
+                spawnAdjacent(roof, houseExtensionRoof, rotation, 2)
+        };
     }
 }
