@@ -84,7 +84,7 @@ public class HouseBuilder extends StructureBuilder {
                 orientation.mul(-1)
         };
 
-        int n = (int) (5 * factor) + world.rand.nextInt(2);
+        int n = (int) (5 * (availableSpace.getXSize() * availableSpace.getZSize() / Math.pow(2 * maxRadius, 2))) + world.rand.nextInt(2);
 
         for (int i = 0; i < orientationsArray.length; i++) {
             Rotation rotation = orientationsArray[i].rotation();
