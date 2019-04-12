@@ -70,7 +70,7 @@ public class HouseBuilder extends StructureBuilder {
         StructureBoundingBox availableSpace = computeAvailableSpace(centerBlock.add(0, 2 * wallsHeight / 3, 0), maxRadius * factor);
 
         StructureBoundingBox walls = spawnStructure(houseBase, centerBlock, orientation.rotation());
-        StructureBoundingBox foundation = spawnStructure(houseBaseFoundation, centerBlock.add(0, -foundationHeight, 0), orientation.rotation());
+        StructureBoundingBox foundation = spawnStructure(houseBaseStilts, centerBlock.add(0, -stiltsHeight, 0), orientation.rotation());
         StructureBoundingBox roof = spawnStructure(houseBaseRoof, centerBlock.add(0, wallsHeight - 1, 0), orientation.rotation());
 
         Vec[] orientationsArray = {
@@ -120,7 +120,7 @@ public class HouseBuilder extends StructureBuilder {
     private StructureBoundingBox[] spawnSmallExtension(StructureBoundingBox walls, StructureBoundingBox foundation, StructureBoundingBox roof, Rotation rotation) {
         return new StructureBoundingBox[]{
                 spawnAdjacent(walls, houseSmallExtension, rotation),
-                spawnAdjacent(foundation, houseSmallExtensionFoundation, rotation),
+                spawnAdjacent(foundation, houseSmallExtensionStilts, rotation),
                 spawnAdjacent(roof, houseSmallExtensionRoof, rotation, 2)
         };
     }
@@ -128,7 +128,7 @@ public class HouseBuilder extends StructureBuilder {
     private StructureBoundingBox[] spawnExtension(StructureBoundingBox walls, StructureBoundingBox foundation, StructureBoundingBox roof, Rotation rotation) {
         return new StructureBoundingBox[]{
                 spawnAdjacent(walls, houseExtension, rotation),
-                spawnAdjacent(foundation, houseExtensionFoundation, rotation),
+                spawnAdjacent(foundation, houseExtensionStilts, rotation),
                 spawnAdjacent(roof, houseExtensionRoof, rotation, 2)
         };
     }
