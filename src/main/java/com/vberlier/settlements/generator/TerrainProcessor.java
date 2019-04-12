@@ -164,7 +164,7 @@ public class TerrainProcessor {
             IBlockState state = world.getBlockState(current);
             Block block = state.getBlock();
 
-            if (!block.isAir(state, world, current) && !block.isPassable(world, current) && !block.isFlammable(world, current, EnumFacing.UP)) {
+            if (!block.isAir(state, world, current) && !block.isPassable(world, current) && !block.isFlammable(world, current, EnumFacing.UP) && !(block instanceof BlockHugeMushroom)) {
                 break;
             }
 
@@ -204,7 +204,7 @@ public class TerrainProcessor {
             IBlockState state = world.getBlockState(current);
             Block block = state.getBlock();
 
-            if (!block.isAir(state, world, current) && !block.isPassable(world, current) && !block.isFlammable(world, current, EnumFacing.UP)) {
+            if (!block.isAir(state, world, current) && !block.isPassable(world, current) && !block.isFlammable(world, current, EnumFacing.UP) && !(block instanceof BlockHugeMushroom)) {
                 break;
             }
 
@@ -252,7 +252,7 @@ public class TerrainProcessor {
                     IBlockState state = world.getBlockState(neighbor);
                     Block block = state.getBlock();
 
-                    if (!block.isAir(state, world, neighbor) && !block.isPassable(world, neighbor) && !block.isFlammable(world, neighbor, EnumFacing.UP)) {
+                    if (!block.isAir(state, world, neighbor) && !block.isPassable(world, neighbor) && !block.isFlammable(world, neighbor, EnumFacing.UP) && !(block instanceof BlockHugeMushroom)) {
                         neighbors++;
                     }
 
@@ -284,7 +284,7 @@ public class TerrainProcessor {
         IBlockState state = world.getBlockState(current);
         Block block = state.getBlock();
 
-        while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP)) {
+        while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP) || block instanceof BlockHugeMushroom) {
             world.setBlockToAir(current);
 
             current = current.down();
@@ -303,8 +303,8 @@ public class TerrainProcessor {
                 state = world.getBlockState(current);
                 block = state.getBlock();
 
-                while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP)) {
-                    if (block.isWood(world, current)) {
+                while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP) || block instanceof BlockHugeMushroom) {
+                    if (block.isWood(world, current) || block instanceof BlockHugeMushroom) {
                         cleanupAdjacentVegetation(current.getX(), current.getZ());
                         break;
                     }
