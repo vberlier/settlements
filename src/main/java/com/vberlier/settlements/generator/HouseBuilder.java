@@ -65,10 +65,9 @@ public class HouseBuilder extends StructureBuilder {
         Vec orientation = slot.getOrientation(graph);
         Vec extensionOrientation = (orientation.axis() == Vec.Axis.X ? orientation.project(Vec.Axis.Z) : orientation.project(Vec.Axis.X)).mul(-1);
 
-        Vec line = slot.getNormal().cross(Vec.up);
-        double uprightFactor = line.length() > 0.01 ? Math.pow(slot.getNormal().cross(line).normalize().project(Vec.Axis.X, Vec.Axis.Z).length(), 2) : 1;
+        double factor = slot.getVerticality() * slot.getDryness();
 
-        StructureBoundingBox availableSpace = computeAvailableSpace(centerBlock.add(0, 2 * wallsHeight / 3, 0), maxRadius * uprightFactor);
+        StructureBoundingBox availableSpace = computeAvailableSpace(centerBlock.add(0, 2 * wallsHeight / 3, 0), maxRadius * factor);
 
         StructureBoundingBox walls = spawnStructure(houseBase, centerBlock, orientation.rotation());
         StructureBoundingBox foundation = spawnStructure(houseBaseFoundation, centerBlock.add(0, -foundationHeight, 0), orientation.rotation());
@@ -81,7 +80,7 @@ public class HouseBuilder extends StructureBuilder {
                 orientation.mul(-1)
         };
 
-        int n = (int) (5 * uprightFactor) + world.rand.nextInt(2);
+        int n = (int) (5 * factor) + world.rand.nextInt(2);
 
         for (int i = 0; i < orientationsArray.length; i++) {
             Rotation rotation = orientationsArray[i].rotation();

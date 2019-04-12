@@ -151,7 +151,12 @@ public class Slot implements Comparable<Slot> {
     }
 
     public double getVerticality() {
-        return Vec.up.cross(normal).length();
+        Vec line = normal.cross(Vec.up);
+        return line.length() > 0.01 ? Math.pow(normal.cross(line).normalize().project(Vec.Axis.X, Vec.Axis.Z).length(), 2) : 1;
+    }
+
+    public double getDryness() {
+        return 1 - (double) liquidBlocks.size() / (double) surface.length;
     }
 
     public Position[] getSurface() {
