@@ -172,4 +172,69 @@ public class StructureBuilder {
     public void rotateColor() {
         colorIndex = (colorIndex + 1) % colors.length;
     }
+
+    public StructureBoundingBox computeAvailableSpace(BlockPos centerBlock, double maxRadius) {
+        int y = centerBlock.getY();
+
+        int minX = centerBlock.getX();
+        int maxX = centerBlock.getX();
+        int minZ = centerBlock.getZ();
+        int maxZ = centerBlock.getZ();
+
+        boolean changed = true;
+
+        while (changed) {
+            boolean expandNorth = centerBlock.getZ() - minZ < maxRadius;
+            boolean expandSouth = maxZ - centerBlock.getZ() < maxRadius;
+
+            for (int x = minX; x < maxX; x++) {
+                BlockPos north = new BlockPos(x, y, minZ - 1);
+                BlockPos south = new BlockPos(x, y, maxZ + 1);
+
+                if (expandNorth && !world.isAirBlock(north)) {
+                    expandNorth = false;
+                }
+
+                if (expandSouth && !world.isAirBlock(south)) {
+                    expandSouth = false;
+                }
+            }
+
+            boolean expandWest = centerBlock.getX() - minX < maxRadius;
+            boolean expandEast = maxX - centerBlock.getX() < maxRadius;
+
+            for (int z = minZ; z < maxZ; z++) {
+                BlockPos west = new BlockPos(minX - 1, y, z);
+                BlockPos east = new BlockPos(maxX + 1, y, z);
+
+                if (expandWest && !world.isAirBlock(west)) {
+                    expandWest = false;
+                }
+
+                if (expandEast && !world.isAirBlock(east)) {
+                    expandEast = false;
+                }
+            }
+
+            if (expandNorth) {
+                minZ--;
+            }
+
+            if (expandSouth) {
+                maxZ++;
+            }
+
+            if (expandWest) {
+                minX--;
+            }
+
+            if (expandEast) {
+                maxX++;
+            }
+
+            changed = expandNorth || expandSouth || expandWest || expandEast;
+        }
+
+        return new StructureBoundingBox(minX, y, minZ, maxX, y, maxZ);
+    }
 }
