@@ -12,6 +12,7 @@ import net.minecraft.world.gen.structure.template.Template;
 public class HouseBuilder extends StructureBuilder {
     private ValueGraph<Slot, Integer> graph;
 
+    private final Template houseDoor;
     private final Template houseBase;
     private final Template houseBaseFoundation;
     private final Template houseBaseRoof;
@@ -37,6 +38,7 @@ public class HouseBuilder extends StructureBuilder {
         super(world, woodVariant);
         this.graph = graph;
 
+        houseDoor = getTemplate("house_door");
         houseBase = getTemplate("house_base");
         houseBaseFoundation = getTemplate("house_base_foundation");
         houseBaseStilts = getTemplate("house_base_stilts");
@@ -73,6 +75,8 @@ public class HouseBuilder extends StructureBuilder {
         StructureBoundingBox foundation = spawnStructure(houseBaseStilts, centerBlock.add(0, -stiltsHeight, 0), orientation.rotation());
         StructureBoundingBox roof = spawnStructure(houseBaseRoof, centerBlock.add(0, wallsHeight - 1, 0), orientation.rotation());
 
+        spawnAdjacent(walls, houseDoor, orientation.rotation());
+
         Vec[] orientationsArray = {
                 extensionOrientation,
                 orientation,
@@ -105,7 +109,12 @@ public class HouseBuilder extends StructureBuilder {
                 spawnExtension(walls, foundation, roof, rotation);
                 n -= 2;
             } else if (availableSpace.isVecInside(adjacentBlock(walls, rotation, smallExtensionLength))) {
-                spawnSmallExtension(walls, foundation, roof, rotation);
+                StructureBoundingBox[] boxes = spawnSmallExtension(walls, foundation, roof, rotation);
+
+                if (rotation.equals(orientation.rotation())) {
+                    spawnAdjacent(boxes[0], houseDoor, rotation);
+                }
+
                 n--;
             }
 

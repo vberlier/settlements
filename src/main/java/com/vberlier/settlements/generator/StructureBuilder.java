@@ -6,6 +6,7 @@ import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
+import net.minecraft.item.ItemDoor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
@@ -57,7 +58,7 @@ public class StructureBuilder {
     }
 
     public StructureBoundingBox spawnAdjacent(StructureBoundingBox boundingBox, Template template, Rotation rotation, int inset) {
-        BlockPos pos = adjacentBlock(boundingBox, rotation,  template.getSize().getX() / 2 - inset);
+        BlockPos pos = adjacentBlock(boundingBox, rotation, template.getSize().getX() / 2 - inset);
         return spawnStructure(template, pos, rotation);
     }
 
@@ -98,6 +99,10 @@ public class StructureBuilder {
 
             if (block instanceof BlockColored) {
                 world.setBlockState(pos, state.withProperty(BlockColored.COLOR, colors[colorIndex]));
+            } else if (block instanceof BlockStainedGlass) {
+                world.setBlockState(pos, state.withProperty(BlockStainedGlass.COLOR, colors[colorIndex]));
+            } else if (block instanceof BlockStainedGlassPane) {
+                world.setBlockState(pos, state.withProperty(BlockStainedGlassPane.COLOR, colors[colorIndex]));
             }
         }
     }
