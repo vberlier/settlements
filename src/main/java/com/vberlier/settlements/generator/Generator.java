@@ -290,7 +290,7 @@ public class Generator {
 
                 double distance = new Vec(pos1.getTerrainBlock()).sub(pos2.getTerrainBlock()).length();
 
-                if (distance < minEdgeLength) {
+                if (distance < minEdgeLength || (distance < 1.8 * minEdgeLength && nearTheEdge(pos1) && nearTheEdge(pos2))) {
                     graph.removeNode(first);
                     graph.removeNode(second);
 
@@ -304,6 +304,17 @@ public class Generator {
                 }
             }
         }
+    }
+
+    private boolean nearTheEdge(Position position) {
+        double threshold = radius / 2;
+
+        BlockPos block = position.getTerrainBlock();
+
+        return block.getX() - originX < threshold
+                || block.getZ() - originZ < threshold
+                || originX + sizeX - block.getX() < threshold
+                || originZ + sizeZ - block.getZ() < threshold;
     }
 
     private void removeTriangles() {
@@ -336,18 +347,16 @@ public class Generator {
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
 
-            // TODO: Add fields
+            // TODO: Add fields and windmills
 
             // TODO: Add bridges
 
             // TODO; Add paths
 
-            // TODO: Terrain cleanup & fix water problem
-
-            // TODO: Don't use hardcoded house layout
+            // TODO: Fix water problem
 
             if (slot.getCenter().getLiquids().isEmpty()) {
-                if (slot.getVerticality() > 0.98 && Math.sin(world.rand.nextInt((int) slot.getCenter().getDistanceFromCenter()) / radius * Math.PI / 2) > 0.25) {
+                if (slot.getVerticality() > 0.98 && Math.sin(world.rand.nextInt((int) Math.abs(slot.getCenter().getDistanceFromCenter()) + 1) / radius * Math.PI / 2) > 0.4) {
                     Set<Slot> adjacentFields = graph.adjacentNodes(slot).stream()
                             .filter(fieldsMap::containsKey)
                             .collect(Collectors.toSet());
