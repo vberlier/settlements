@@ -8,6 +8,7 @@ import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockColored;
 import net.minecraft.block.BlockHugeMushroom;
+import net.minecraft.block.BlockPlanks;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
@@ -390,13 +391,15 @@ public class Generator {
             return false;
         });
 
-        HouseBuilder houseBuilder = new HouseBuilder(world, graph, terrainProcessor.mostCommonWoodVariant());
+        BlockPlanks.EnumType woodVariant = terrainProcessor.mostCommonWoodVariant();
+
+        HouseBuilder houseBuilder = new HouseBuilder(world, graph, woodVariant);
 
         for (Slot slot : houses) {
             houseBuilder.build(slot, 5 * safeSlotRadius / 3);
         }
 
-        FieldBuilder fieldBuilder = new FieldBuilder(world, positions);
+        FieldBuilder fieldBuilder = new FieldBuilder(world, graph, positions, woodVariant);
 
         for (Set<Slot> slot : new HashSet<>(fieldsMap.values())) {
             fieldBuilder.build(slot);

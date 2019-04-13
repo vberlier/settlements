@@ -1,13 +1,16 @@
 package com.vberlier.settlements.generator;
 
+import com.google.common.graph.MutableValueGraph;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockCrops;
 import net.minecraft.block.BlockFarmland;
+import net.minecraft.block.BlockPlanks;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.structure.template.Template;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,14 +18,34 @@ import java.util.stream.Stream;
 
 public class FieldBuilder {
     private final World world;
+    private MutableValueGraph<Slot, Vec> graph;
     private final Position[][] terrain;
+    private final StructureBuilder structureBuilder;
 
-    public FieldBuilder(World world, Position[][] terrain) {
+    private final Template windmill;
+
+    public FieldBuilder(World world, MutableValueGraph<Slot, Vec> graph, Position[][] terrain, BlockPlanks.EnumType woodVariant) {
         this.world = world;
+        this.graph = graph;
         this.terrain = terrain;
+
+        structureBuilder = new StructureBuilder(world, woodVariant);
+        windmill = structureBuilder.getTemplate("windmill");
     }
 
     public void build(Set<Slot> slots) {
+        if (slots.size() > 2 || world.rand.nextBoolean()) {
+            System.out.println("windmill");
+
+            Slot randomSlot = slots.stream().findFirst().get();
+
+            BlockPos centerBlock = randomSlot.getCenter().getTerrainBlock();
+            Vec orientation = randomSlot.getOrientation(graph);
+
+            structureBuilder.spawnStructure(windmill, centerBlock.add(0, -5, 0), orientation.rotation());
+            structureBuilder.rotateColor();
+        }
+
         Set<Position> surface = computeConvexSurface(slots);
 
         for (Position position : surface) {
