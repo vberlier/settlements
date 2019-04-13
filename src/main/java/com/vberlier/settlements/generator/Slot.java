@@ -207,7 +207,7 @@ public class Slot implements Comparable<Slot> {
         return vegetationBlocks;
     }
 
-    public Vec getOrientation(ValueGraph<Slot, Integer> graph) {
+    public Vec getOrientation(ValueGraph<Slot, Vec> graph) {
         Vec orientation = normal;
 
         for (Slot adjacentNode : graph.adjacentNodes(this)) {
@@ -215,6 +215,10 @@ public class Slot implements Comparable<Slot> {
         }
 
         return orientation.project(Vec.Axis.X, Vec.Axis.Z);
+    }
+
+    public Vec edgeConnection(Slot other) {
+        return new Vec(center.getTerrainBlock()).sub(other.center.getTerrainBlock());
     }
 
     @Override

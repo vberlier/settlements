@@ -38,7 +38,7 @@ public class Generator {
     private final Vec[][] normals;
     private final Vec origin;
     private final Vec center;
-    private final MutableValueGraph<Slot, Integer> graph;
+    private final MutableValueGraph<Slot, Vec> graph;
 
     private int slotSize = 300;
     private double slotFlexibility = 0.45;
@@ -253,7 +253,7 @@ public class Generator {
             Slot neighbor = coordinates.getSurface();
 
             if (neighbor != null && neighbor != node) {
-                graph.putEdgeValue(node, neighbor, 1);
+                graph.putEdgeValue(node, neighbor, node.edgeConnection(neighbor));
             }
 
             int i = coordinates.i + normalOffsetI;
@@ -266,7 +266,7 @@ public class Generator {
             neighbor = positions[i][j].getSurface();
 
             if (neighbor != null && neighbor != node) {
-                graph.putEdgeValue(node, neighbor, 2);
+                graph.putEdgeValue(node, neighbor, node.edgeConnection(neighbor));
             }
         }
     }
@@ -305,29 +305,17 @@ public class Generator {
     }
 
     private void removeTriangles() {
-        boolean changed = true;
+        Queue<EndpointPair<Slot>> edgeQueue = new PriorityQueue<>((a, b) -> Double.compare(graph.edgeValue(b.nodeU(), b.nodeV()).length(), graph.edgeValue(a.nodeU(), a.nodeV()).length()));
+        edgeQueue.addAll(graph.edges());
 
-        while (changed) {
-            changed = false;
+        while (!edgeQueue.isEmpty()) {
+            EndpointPair<Slot> edge = edgeQueue.poll();
+            Slot first = edge.nodeU();
+            Slot second = edge.nodeV();
 
-            for (EndpointPair<Slot> edge : graph.edges()) {
-                Slot first = edge.nodeU();
-                Slot second = edge.nodeV();
-
-                boolean foundOtherEdge = false;
-
-                for (Slot node : graph.adjacentNodes(first)) {
-                    if (graph.adjacentNodes(node).contains(second)) {
-                        foundOtherEdge = true;
-
-                        graph.removeEdge(first, second);
-                        changed = true;
-
-                        break;
-                    }
-                }
-
-                if (foundOtherEdge) {
+            for (Slot node : graph.adjacentNodes(first)) {
+                if (graph.adjacentNodes(node).contains(second)) {
+                    graph.removeEdge(first, second);
                     break;
                 }
             }

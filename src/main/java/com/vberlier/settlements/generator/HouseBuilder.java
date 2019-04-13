@@ -10,7 +10,7 @@ import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.gen.structure.template.Template;
 
 public class HouseBuilder extends StructureBuilder {
-    private ValueGraph<Slot, Integer> graph;
+    private ValueGraph<Slot, Vec> graph;
 
     private final Template houseDoor;
     private final Template houseBase;
@@ -34,7 +34,7 @@ public class HouseBuilder extends StructureBuilder {
     private final int extensionLength;
     private final int smallExtensionLength;
 
-    public HouseBuilder(World world, ValueGraph<Slot, Integer> graph, BlockPlanks.EnumType woodVariant) {
+    public HouseBuilder(World world, ValueGraph<Slot, Vec> graph, BlockPlanks.EnumType woodVariant) {
         super(world, woodVariant);
         this.graph = graph;
 
