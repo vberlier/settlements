@@ -28,6 +28,7 @@ public class Generator {
     private final int originZ;
     private final int sizeX;
     private final int sizeZ;
+    private final double radius;
     private final int[][] heights;
     private final BlockPos[][] heightMap;
     private final BlockPos[][] terrainMap;
@@ -53,6 +54,7 @@ public class Generator {
         originZ = boundingBox.minZ;
         sizeX = boundingBox.getXSize();
         sizeZ = boundingBox.getZSize();
+        radius = (sizeX + sizeZ) / 4.0;
 
         heights = new int[sizeX][sizeZ];
         heightMap = new BlockPos[sizeX][sizeZ];
@@ -324,7 +326,9 @@ public class Generator {
 
     private void processGraph() {
         Queue<Slot> slotsQueue = new PriorityQueue<>(graph.nodes());
+
         Set<Slot> houses = new HashSet<>();
+        Set<Slot> fields = new HashSet<>();
 
         TerrainProcessor terrainProcessor = new TerrainProcessor(world, originX, originZ, positions);
 
@@ -342,15 +346,34 @@ public class Generator {
             // TODO: Don't use hardcoded house layout
 
             if (slot.getCenter().getLiquids().isEmpty()) {
+                if (slot.getVerticality() > 0.98 && world.rand.nextInt((int) slot.getCenter().getDistanceFromCenter()) > radius * 0.4) {
+                    fields.add(slot);
+                } else {
+                    houses.add(slot);
+                }
+
                 terrainProcessor.flatten(slot, Vec.up, 3 * safeSlotRadius / 4);
-                houses.add(slot);
             }
         }
+
+        fields.removeIf(slot -> {
+            if (graph.adjacentNodes(slot).stream().noneMatch(fields::contains)) {
+                houses.add(slot);
+                return true;
+            }
+            return false;
+        });
 
         HouseBuilder houseBuilder = new HouseBuilder(world, graph, terrainProcessor.mostCommonWoodVariant());
 
         for (Slot slot : houses) {
             houseBuilder.build(slot, 5 * safeSlotRadius / 3);
+        }
+
+        FieldBuilder fieldBuilder = new FieldBuilder(world);
+
+        for (Slot slot : fields) {
+            fieldBuilder.build(slot);
         }
     }
 
