@@ -328,7 +328,8 @@ public class Generator {
         Queue<Slot> slotsQueue = new PriorityQueue<>(graph.nodes());
 
         Set<Slot> houses = new HashSet<>();
-        Set<Slot> fields = new HashSet<>();
+
+        HashMap<Slot, Set<Slot>> fieldsMap = new HashMap<>();
 
         TerrainProcessor terrainProcessor = new TerrainProcessor(world, originX, originZ, positions);
 
@@ -346,8 +347,20 @@ public class Generator {
             // TODO: Don't use hardcoded house layout
 
             if (slot.getCenter().getLiquids().isEmpty()) {
-                if (slot.getVerticality() > 0.98 && world.rand.nextInt((int) slot.getCenter().getDistanceFromCenter()) > radius * 0.4) {
-                    fields.add(slot);
+                if (slot.getVerticality() > 0.98 && Math.sin(world.rand.nextInt((int) slot.getCenter().getDistanceFromCenter()) / radius * Math.PI / 2) > 0.25) {
+                    Set<Slot> adjacentFields = graph.adjacentNodes(slot).stream()
+                            .filter(fieldsMap::containsKey)
+                            .collect(Collectors.toSet());
+
+                    Set<Slot> newSet = adjacentFields.stream()
+                            .flatMap(adjacent -> fieldsMap.containsKey(adjacent) ? fieldsMap.get(adjacent).stream() : Stream.of(adjacent))
+                            .collect(Collectors.toSet());
+
+                    newSet.add(slot);
+
+                    for (Slot fieldSlot : newSet) {
+                        fieldsMap.put(fieldSlot, newSet);
+                    }
                 } else {
                     houses.add(slot);
                 }
@@ -356,9 +369,9 @@ public class Generator {
             }
         }
 
-        fields.removeIf(slot -> {
-            if (graph.adjacentNodes(slot).stream().noneMatch(fields::contains)) {
-                houses.add(slot);
+        fieldsMap.entrySet().removeIf(entry -> {
+            if (entry.getValue().size() < 2) {
+                houses.add(entry.getKey());
                 return true;
             }
             return false;
@@ -370,9 +383,9 @@ public class Generator {
             houseBuilder.build(slot, 5 * safeSlotRadius / 3);
         }
 
-        FieldBuilder fieldBuilder = new FieldBuilder(world);
+        FieldBuilder fieldBuilder = new FieldBuilder(world, positions);
 
-        for (Slot slot : fields) {
+        for (Set<Slot> slot : new HashSet<>(fieldsMap.values())) {
             fieldBuilder.build(slot);
         }
     }
