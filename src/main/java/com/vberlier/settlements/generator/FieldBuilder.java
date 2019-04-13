@@ -1,5 +1,6 @@
 package com.vberlier.settlements.generator;
 
+import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockCrops;
 import net.minecraft.block.BlockFarmland;
@@ -22,15 +23,20 @@ public class FieldBuilder {
     }
 
     public void build(Set<Slot> slots) {
-        Set<BlockPos> surface = computeConvexSurface(slots);
+        Set<Position> surface = computeConvexSurface(slots);
 
-        for (BlockPos originalTerrain : surface) {
+        for (Position position : surface) {
+            BlockPos originalTerrain = position.getTerrainBlock();
             BlockPos pos = new BlockPos(originalTerrain.getX(), world.getHeight(originalTerrain.getX(), originalTerrain.getZ()) - 1, originalTerrain.getZ());
 
             IBlockState state = world.getBlockState(pos);
             Block block = state.getBlock();
 
-            if (block != Blocks.DIRT && block != Blocks.GRASS) {
+            if (!canReplaceWithFarmland(block)) {
+                continue;
+            }
+
+            if (position.getNormal().project(Vec.Axis.Y).length() < 0.9) {
                 continue;
             }
 
@@ -46,7 +52,11 @@ public class FieldBuilder {
         }
     }
 
-    private Set<BlockPos> computeConvexSurface(Set<Slot> slots) {
+    public static boolean canReplaceWithFarmland(Block block) {
+        return block == Blocks.DIRT || block == Blocks.GRASS;
+    }
+
+    private Set<Position> computeConvexSurface(Set<Slot> slots) {
         Set<Position> positions = slots.stream().flatMap(slot -> Arrays.stream(slot.getSurface())).collect(Collectors.toSet());
         Slot tmpSlot = new Slot(positions, terrain);
 
@@ -88,7 +98,7 @@ public class FieldBuilder {
             }
         }
 
-        return surface.stream().map(Position::getTerrainBlock).collect(Collectors.toSet());
+        return surface;
     }
 
     public void setWheat(BlockPos pos) {

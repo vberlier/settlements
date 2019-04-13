@@ -356,7 +356,11 @@ public class Generator {
             // TODO: Fix water problem
 
             if (slot.getCenter().getLiquids().isEmpty()) {
-                if (slot.getVerticality() > 0.98 && Math.sin(world.rand.nextInt((int) Math.abs(slot.getCenter().getDistanceFromCenter()) + 1) / radius * Math.PI / 2) > 0.4) {
+                if (
+                        FieldBuilder.canReplaceWithFarmland(world.getBlockState(slot.getCenter().getTerrainBlock()).getBlock())
+                        && slot.getNormal().project(Vec.Axis.Y).length() > 0.9
+                        && Math.sin(world.rand.nextInt((int) Math.abs(slot.getCenter().getDistanceFromCenter()) + 1) / radius * Math.PI / 2) > 0.4
+                ) {
                     Set<Slot> adjacentFields = graph.adjacentNodes(slot).stream()
                             .filter(fieldsMap::containsKey)
                             .collect(Collectors.toSet());
