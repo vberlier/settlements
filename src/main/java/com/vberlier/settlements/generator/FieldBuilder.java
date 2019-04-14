@@ -7,6 +7,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.gen.structure.template.Template;
 
 import java.util.*;
@@ -37,7 +38,9 @@ public class FieldBuilder {
             BlockPos centerBlock = randomSlot.getCenter().getTerrainBlock();
             Vec orientation = randomSlot.getOrientation(graph);
 
-            structureBuilder.spawnStructure(windmill, centerBlock.add(0, -5, 0), orientation.rotation());
+            StructureBoundingBox boundingBox = structureBuilder.spawnStructure(windmill, centerBlock.add(0, -5, 0), orientation.rotation());
+            randomSlot.setAnchor(StructureBuilder.adjacentBlock(boundingBox, orientation.mul(-1).rotation(), 1));
+
             structureBuilder.rotateColor();
         }
 

@@ -134,8 +134,6 @@ public class HouseBuilder extends StructureBuilder {
         BlockPos anchor = buildHouseFront(new Vec(doorBoundingBox.minX, doorBoundingBox.minY, doorBoundingBox.minZ), orientation);
         slot.setAnchor(anchor);
 
-        world.setBlockState(anchor, Blocks.REDSTONE_BLOCK.getDefaultState());
-
         rotateColor();
     }
 
