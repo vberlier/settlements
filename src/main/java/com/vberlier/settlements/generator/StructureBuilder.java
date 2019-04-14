@@ -6,7 +6,6 @@ import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
-import net.minecraft.item.ItemDoor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
@@ -116,13 +115,7 @@ public class StructureBuilder {
             Block block = state.getBlock();
 
             if (block instanceof BlockLog) {
-                IBlockState newState;
-
-                if (woodVariant == BlockPlanks.EnumType.ACACIA || woodVariant == BlockPlanks.EnumType.DARK_OAK) {
-                    newState = Blocks.LOG2.getDefaultState().withProperty(BlockNewLog.VARIANT, woodVariant);
-                } else {
-                    newState = Blocks.LOG.getDefaultState().withProperty(BlockOldLog.VARIANT, woodVariant);
-                }
+                IBlockState newState = getLogBlockState();
 
                 for (IProperty property : state.getProperties().keySet()) {
                     if (!property.getName().equals("variant")) {
@@ -170,6 +163,14 @@ public class StructureBuilder {
                     }
                 }
             }
+        }
+    }
+
+    public IBlockState getLogBlockState() {
+        if (woodVariant == BlockPlanks.EnumType.ACACIA || woodVariant == BlockPlanks.EnumType.DARK_OAK) {
+            return Blocks.LOG2.getDefaultState().withProperty(BlockNewLog.VARIANT, woodVariant);
+        } else {
+            return Blocks.LOG.getDefaultState().withProperty(BlockOldLog.VARIANT, woodVariant);
         }
     }
 

@@ -223,7 +223,7 @@ public class TerrainProcessor {
         IBlockState state = position.getTerrainBlockState();
         Block block = state.getBlock();
 
-        if (block.equals(Blocks.GRASS)) {
+        if (block instanceof BlockGrass) {
             block = Blocks.DIRT;
             state = block.getDefaultState();
         }
@@ -232,7 +232,7 @@ public class TerrainProcessor {
             world.setBlockState(new BlockPos(current.getX(), i, current.getZ()), state);
         }
 
-        if (block.equals(Blocks.DIRT)) {
+        if (block instanceof BlockDirt) {
             world.setBlockState(current, Blocks.GRASS.getDefaultState());
         } else {
             world.setBlockState(current, state);
@@ -272,7 +272,7 @@ public class TerrainProcessor {
 
                 block = block.down();
 
-                if (world.getBlockState(block).getBlock().equals(Blocks.DIRT)) {
+                if (world.getBlockState(block).getBlock() instanceof BlockDirt) {
                     world.setBlockState(block, Blocks.GRASS.getDefaultState());
                 }
             }

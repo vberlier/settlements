@@ -198,6 +198,11 @@ public class Vec implements Comparable<Vec> {
 
     public Vec normalize() {
         double length = length();
+
+        if (length == 0) {
+            return new Vec(0);
+        }
+
         return new Vec(x / length, y / length, z / length);
     }
 

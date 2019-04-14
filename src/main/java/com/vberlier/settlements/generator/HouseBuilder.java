@@ -3,14 +3,21 @@ package com.vberlier.settlements.generator;
 import com.google.common.graph.ValueGraph;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.*;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.Rotation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.gen.structure.template.Template;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class HouseBuilder extends StructureBuilder {
-    private ValueGraph<Slot, Vec> graph;
+    private final ValueGraph<Slot, Vec> graph;
+    private final PathBuilder pathBuilder;
 
     private final Template houseDoor;
     private final Template houseBase;
@@ -34,9 +41,10 @@ public class HouseBuilder extends StructureBuilder {
     private final int extensionLength;
     private final int smallExtensionLength;
 
-    public HouseBuilder(World world, ValueGraph<Slot, Vec> graph, BlockPlanks.EnumType woodVariant) {
+    public HouseBuilder(World world, ValueGraph<Slot, Vec> graph, BlockPlanks.EnumType woodVariant, PathBuilder pathBuilder) {
         super(world, woodVariant);
         this.graph = graph;
+        this.pathBuilder = pathBuilder;
 
         houseDoor = getTemplate("house_door");
         houseBase = getTemplate("house_base");
@@ -75,7 +83,7 @@ public class HouseBuilder extends StructureBuilder {
         StructureBoundingBox foundation = spawnStructure(houseBaseStilts, centerBlock.add(0, -stiltsHeight, 0), orientation.rotation());
         StructureBoundingBox roof = spawnStructure(houseBaseRoof, centerBlock.add(0, wallsHeight - 1, 0), orientation.rotation());
 
-        spawnAdjacent(walls, houseDoor, orientation.rotation());
+        StructureBoundingBox doorBoundingBox = spawnAdjacent(walls, houseDoor, orientation.rotation());
 
         Vec[] orientationsArray = {
                 extensionOrientation,
@@ -112,7 +120,7 @@ public class HouseBuilder extends StructureBuilder {
                 StructureBoundingBox[] boxes = spawnSmallExtension(walls, foundation, roof, rotation);
 
                 if (rotation.equals(orientation.rotation())) {
-                    spawnAdjacent(boxes[0], houseDoor, rotation);
+                    doorBoundingBox = spawnAdjacent(boxes[0], houseDoor, rotation);
                 }
 
                 n--;
@@ -123,7 +131,86 @@ public class HouseBuilder extends StructureBuilder {
             }
         }
 
+        BlockPos anchor = buildHouseFront(new Vec(doorBoundingBox.minX, doorBoundingBox.minY, doorBoundingBox.minZ), orientation);
+        slot.setAnchor(anchor);
+
+        world.setBlockState(anchor, Blocks.REDSTONE_BLOCK.getDefaultState());
+
         rotateColor();
+    }
+
+    private BlockPos buildHouseFront(Vec housePosition, Vec orientation) {
+        Vec sideways = orientation.cross(Vec.up).normalize();
+        Vec cornerOffset = sideways.mul(2);
+
+        Vec[] pillars = new Vec[]{housePosition.sub(cornerOffset).add(orientation.mul(3)), housePosition.add(cornerOffset).add(orientation.mul(3))};
+
+        double groundDistance = 0;
+
+        for (Vec pillar : pillars) {
+            Vec ground = pillar.add(Vec.down);
+
+            while (world.isAirBlock(ground.block()) || world.containsAnyLiquid(new AxisAlignedBB(ground.block()))) {
+                ground = ground.add(Vec.down);
+            }
+
+            groundDistance = Math.max(pillar.sub(ground).length(), groundDistance);
+        }
+
+        if (groundDistance > 2) {
+            for (Vec pillar : pillars) {
+                IBlockState state = getLogBlockState();
+                for (int i = -1; i <= groundDistance + 1; i++) {
+                    world.setBlockState(pillar.add(0, -i, 0).block(), state);
+                }
+            }
+
+            for (double i = -2; i <= 2; i += 0.5) {
+                for (double j = -1; j <= 3; j += 0.5) {
+                    BlockPos pos = housePosition.add(sideways.mul(i)).add(orientation.mul(j)).block();
+                    if (pathBuilder.setPlanks(pos)) {
+                        world.setBlockToAir(pos.add(0, 1, 0));
+                    }
+                }
+            }
+            return housePosition.add(orientation.mul(4)).block();
+        }
+
+        int y = housePosition.block().getY();
+
+        for (double i = -1; i <= 1; i += 0.5) {
+            for (double j = -1; j <= 1; j += 0.5) {
+                BlockPos pos = housePosition.add(sideways.mul(i)).add(orientation.mul(j)).block();
+                BlockPos placed = pathBuilder.setBlockOrSlab(pos);
+
+                if (placed != null) {
+                    world.setBlockToAir(pos.add(0, 1, 0));
+
+                    if (placed != pos) {
+                        y = placed.getY();
+                    }
+                }
+            }
+        }
+
+        Vec anchor = orientation.add(housePosition.x, y, housePosition.z);
+
+        for (double i = -2; i <= 2; i += 0.5) {
+            for (double j = -2; j <= 2; j += 0.5) {
+                BlockPos pos = anchor.add(sideways.mul(i)).add(orientation.mul(j)).block();
+                BlockPos placed = pathBuilder.setBlockOrSlab(pos);
+
+                if (placed != null) {
+                    world.setBlockToAir(pos.add(0, 1, 0));
+
+                    if (placed != pos) {
+                        y = placed.getY();
+                    }
+                }
+            }
+        }
+
+        return anchor.add(orientation.mul(3)).project(Vec.Axis.X, Vec.Axis.Z).add(0, y, 0).block();
     }
 
     private StructureBoundingBox[] spawnSmallExtension(StructureBoundingBox walls, StructureBoundingBox foundation, StructureBoundingBox roof, Rotation rotation) {

@@ -28,6 +28,7 @@ public class Slot implements Comparable<Slot> {
     private Position origin;
     private Position center;
     private final Set<Position> convexHull;
+    private BlockPos anchor;
 
     public Slot(Collection<Position> surface, Position[][] terrain) {
         logger = SettlementsMod.instance.getLogger();
@@ -90,6 +91,8 @@ public class Slot implements Comparable<Slot> {
 
         convexHull = new HashSet<>();
         computeConvexHull();
+
+        anchor = center.getTerrainBlock();
     }
 
     public static Set<Position> computeEdge(Collection<Position> surface, Position[][] terrain) {
@@ -139,22 +142,16 @@ public class Slot implements Comparable<Slot> {
             }
         }
 
-        logger.info("Leftmost point: " + edge[leftmost].getTerrainBlock() + " (index " + leftmost + ")");
-
         int p = leftmost;
 
         do {
             int q = (p + 1) % edge.length;
-
-            logger.info("Finding next point");
 
             for (int i = 0; i < edge.length; i++) {
                 if (relativeConvexOrientation(edge[p], edge[i], edge[q]) == 2) {
                     q = i;
                 }
             }
-
-            logger.info("Adding interpolation between " + edge[p] .getTerrainBlock() + " (previous) and " + edge[q].getTerrainBlock() + " (current)");
 
             for (Point point : new Point(edge[p]).line(edge[q])) {
                 convexHull.add(terrain[(int) point.x][(int) point.y]);
@@ -240,11 +237,21 @@ public class Slot implements Comparable<Slot> {
             orientation = orientation.add(new Vec(adjacentNode.getCenter().getTerrainBlock()).sub(center.getTerrainBlock()).normalize());
         }
 
-        return orientation.project(Vec.Axis.X, Vec.Axis.Z);
+        orientation = orientation.project(Vec.Axis.X, Vec.Axis.Z).normalize();
+
+        return orientation.length() == 0 ? Vec.east : orientation;
     }
 
     public Vec edgeConnection(Slot other) {
         return new Vec(center.getTerrainBlock()).sub(other.center.getTerrainBlock());
+    }
+
+    public void setAnchor(BlockPos anchor) {
+        this.anchor = anchor;
+    }
+
+    public BlockPos getAnchor() {
+        return anchor;
     }
 
     @Override

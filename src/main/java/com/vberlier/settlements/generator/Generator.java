@@ -444,7 +444,8 @@ public class Generator {
         BlockPlanks.EnumType woodVariant = terrainProcessor.mostCommonWoodVariant();
         logger.info("Most common wood variant harvested: " + woodVariant);
 
-        HouseBuilder houseBuilder = new HouseBuilder(world, graph, woodVariant);
+        PathBuilder pathBuilder = new PathBuilder(world, woodVariant);
+        HouseBuilder houseBuilder = new HouseBuilder(world, graph, woodVariant, pathBuilder);
 
         logger.info("Building houses...");
 

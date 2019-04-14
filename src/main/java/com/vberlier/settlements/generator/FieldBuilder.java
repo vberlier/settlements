@@ -2,10 +2,7 @@ package com.vberlier.settlements.generator;
 
 import com.google.common.graph.MutableValueGraph;
 import com.vberlier.settlements.util.Vec;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockCrops;
-import net.minecraft.block.BlockFarmland;
-import net.minecraft.block.BlockPlanks;
+import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
@@ -74,7 +71,7 @@ public class FieldBuilder {
     }
 
     public static boolean canReplaceWithFarmland(Block block) {
-        return block == Blocks.DIRT || block == Blocks.GRASS;
+        return block instanceof BlockDirt || block instanceof BlockGrass;
     }
 
     private Set<Position> computeConvexSurface(Set<Slot> slots) {
