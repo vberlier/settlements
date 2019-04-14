@@ -35,8 +35,6 @@ public class FieldBuilder {
 
     public void build(Set<Slot> slots) {
         if (slots.size() > 2 || world.rand.nextBoolean()) {
-            System.out.println("windmill");
-
             Slot randomSlot = slots.stream().findFirst().get();
 
             BlockPos centerBlock = randomSlot.getCenter().getTerrainBlock();

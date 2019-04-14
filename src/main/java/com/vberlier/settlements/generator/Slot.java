@@ -1,13 +1,17 @@
 package com.vberlier.settlements.generator;
 
 import com.google.common.graph.ValueGraph;
+import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 public class Slot implements Comparable<Slot> {
+    private final Logger logger;
+
     private final Position[] surface;
     private final Position[][] terrain;
     private final Position[] edge;
@@ -26,9 +30,14 @@ public class Slot implements Comparable<Slot> {
     private final Set<Position> convexHull;
 
     public Slot(Collection<Position> surface, Position[][] terrain) {
+        logger = SettlementsMod.instance.getLogger();
+
         this.surface = surface.toArray(new Position[0]);
         this.terrain = terrain;
+
+        logger.info("Computing surface edge...");
         edge = computeEdge(surface, terrain).toArray(new Position[0]);
+        logger.info("Edge length: " + edge.length);
 
         Position first = this.surface[0];
 
@@ -40,6 +49,8 @@ public class Slot implements Comparable<Slot> {
 
         liquidBlocks = new HashSet<>();
         vegetationBlocks = new HashSet<>();
+
+        logger.info("Computing surface normal and bounding box...");
 
         for (Position pos : surface) {
             pos.setSurface(this);
@@ -62,11 +73,18 @@ public class Slot implements Comparable<Slot> {
         normal = normal.div(surface.size());
         middle = middle.div(surface.size());
 
+        logger.info("normal: " + normal);
+        logger.info("middle: " + middle);
+
         width = maxI - minI;
         height = maxJ - minJ;
 
         origin = terrain[minI][minJ];
         BlockPos originBlock = origin.getTerrainBlock();
+
+        logger.info("originBlock: " + originBlock);
+        logger.info("width: " + width);
+        logger.info("height: " + height);
 
         center = terrain[(int) (middle.x - originBlock.getX() + minI)][(int) (middle.z - originBlock.getZ() + minJ)];
 
@@ -107,6 +125,8 @@ public class Slot implements Comparable<Slot> {
     }
 
     private void computeConvexHull() {
+        logger.info("Computing convex hull...");
+
         if (edge.length < 3) {
             return;
         }
@@ -119,16 +139,22 @@ public class Slot implements Comparable<Slot> {
             }
         }
 
+        logger.info("Leftmost point: " + edge[leftmost].getTerrainBlock() + " (index " + leftmost + ")");
+
         int p = leftmost;
 
         do {
             int q = (p + 1) % edge.length;
+
+            logger.info("Finding next point");
 
             for (int i = 0; i < edge.length; i++) {
                 if (relativeConvexOrientation(edge[p], edge[i], edge[q]) == 2) {
                     q = i;
                 }
             }
+
+            logger.info("Adding interpolation between " + edge[p] .getTerrainBlock() + " (previous) and " + edge[q].getTerrainBlock() + " (current)");
 
             for (Point point : new Point(edge[p]).line(edge[q])) {
                 convexHull.add(terrain[(int) point.x][(int) point.y]);

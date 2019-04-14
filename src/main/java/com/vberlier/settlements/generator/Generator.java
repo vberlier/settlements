@@ -3,6 +3,7 @@ package com.vberlier.settlements.generator;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
+import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.block.Block;
@@ -17,12 +18,15 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Generator {
+    private final Logger logger;
+
     private final World world;
     private final StructureBoundingBox boundingBox;
     private final int originX;
@@ -48,6 +52,10 @@ public class Generator {
     private double safeSlotRadius = 0.75 * Math.sqrt(slotSize / Math.PI);
 
     public Generator(World world, StructureBoundingBox boundingBox) {
+        logger = SettlementsMod.instance.getLogger();
+
+        logger.info("Setting up generator...");
+
         this.world = world;
         this.boundingBox = boundingBox;
 
@@ -56,6 +64,10 @@ public class Generator {
         sizeX = boundingBox.getXSize();
         sizeZ = boundingBox.getZSize();
         radius = (sizeX + sizeZ) / 4.0;
+
+        logger.info("sizeX: " + sizeX);
+        logger.info("sizeZ: " + sizeZ);
+        logger.info("radius: " + radius);
 
         heights = new int[sizeX][sizeZ];
         heightMap = new BlockPos[sizeX][sizeZ];
@@ -81,7 +93,12 @@ public class Generator {
         origin = new Vec(originX, 0, originZ);
         center = origin.add((double) sizeX / 2.0, 0, (double) sizeZ / 2.0);
 
+        logger.info("origin: " + origin);
+        logger.info("center: " + center);
+
         graph = ValueGraphBuilder.undirected().build();
+
+        logger.info("Generator ready");
     }
 
     public void buildSettlement() {
@@ -97,6 +114,8 @@ public class Generator {
     }
 
     private void computeMaps() {
+        logger.info("Computing heightMap and terrainMap...");
+
         for (int i = 0; i < sizeX; i++) {
             for (int j = 0; j < sizeZ; j++) {
                 int x = originX + i;
@@ -142,6 +161,8 @@ public class Generator {
     }
 
     private void computeVertices() {
+        logger.info("Computing terrain vertices...");
+
         Vec[][] firstPass = vertices.clone();
 
         for (int i = 0; i < verticesSizeX; i++) {
@@ -155,6 +176,8 @@ public class Generator {
     }
 
     private void computeNormals() {
+        logger.info("Computing terrain normals...");
+
         for (int i = 1; i < sizeX - 1; i++) {
             for (int j = 1; j < sizeZ - 1; j++) {
                 Vec normal = Vec.normal(vertices[i - 1][j - 1], vertices[i - 1][j], vertices[i][j], vertices[i][j - 1]).normalize();
@@ -165,6 +188,8 @@ public class Generator {
     }
 
     private void computeSlotGraph() {
+        logger.info("Creating graph...");
+
         Queue<Position> nextBlocks = new PriorityQueue<>();
         Set<Position> availableBlocks = new HashSet<>();
 
@@ -177,6 +202,8 @@ public class Generator {
         }
 
         while (!nextBlocks.isEmpty()) {
+            logger.info("Attempting to create a new slot...");
+
             Position origin = nextBlocks.poll();
 
             Set<Position> surface = new HashSet<>();
@@ -235,10 +262,15 @@ public class Generator {
             }
 
             if (surface.size() < slotSize) {
+                logger.info("Too small");
                 continue;
             }
 
+
+            logger.info("Creating new node...");
             Slot node = new Slot(surface, positions);
+
+            logger.info("Adding new node to the graph...");
             graph.addNode(node);
         }
 
@@ -248,6 +280,8 @@ public class Generator {
     }
 
     private void connectNeighbors(Slot node) {
+        logger.info("Connecting neighbors of node at " + node.getCenter().getTerrainBlock());
+
         Vec modifier = node.getNormal().mul(normalConnectivity);
         int normalOffsetI = (int) Math.round(modifier.x);
         int normalOffsetJ = (int) Math.round(modifier.z);
@@ -275,6 +309,8 @@ public class Generator {
     }
 
     private void removeShortEdges() {
+        logger.info("Removing short edges...");
+
         double minEdgeLength = 2 * safeSlotRadius;
 
         boolean changed = true;
@@ -319,6 +355,8 @@ public class Generator {
     }
 
     private void removeTriangles() {
+        logger.info("Removing triangles...");
+
         Queue<EndpointPair<Slot>> edgeQueue = new PriorityQueue<>((a, b) -> Double.compare(graph.edgeValue(b.nodeU(), b.nodeV()).length(), graph.edgeValue(a.nodeU(), a.nodeV()).length()));
         edgeQueue.addAll(graph.edges());
 
@@ -337,10 +375,11 @@ public class Generator {
     }
 
     private void processGraph() {
+        logger.info("Processing graph...");
+
         Queue<Slot> slotsQueue = new PriorityQueue<>(graph.nodes());
 
         Set<Slot> houses = new HashSet<>();
-
         HashMap<Slot, Set<Slot>> fieldsMap = new HashMap<>();
 
         TerrainProcessor terrainProcessor = new TerrainProcessor(world, originX, originZ, positions);
@@ -348,7 +387,7 @@ public class Generator {
         while (!slotsQueue.isEmpty()) {
             Slot slot = slotsQueue.poll();
 
-            // TODO: Add fields and windmills
+            logger.info("Classifying node at " + slot.getCenter().getTerrainBlock());
 
             // TODO: Add bridges
 
@@ -356,12 +395,16 @@ public class Generator {
 
             // TODO: Fix water problem
 
+            // TODO: Fix problem with large selections
+
             if (slot.getCenter().getLiquids().isEmpty()) {
                 if (
                         FieldBuilder.canReplaceWithFarmland(world.getBlockState(slot.getCenter().getTerrainBlock()).getBlock())
                         && slot.getNormal().project(Vec.Axis.Y).length() > 0.9
                         && Math.sin(world.rand.nextInt((int) Math.abs(slot.getCenter().getDistanceFromCenter()) + 1) / radius * Math.PI / 2) > 0.4
                 ) {
+                    logger.info("Registering as a field");
+
                     Set<Slot> adjacentFields = graph.adjacentNodes(slot).stream()
                             .filter(fieldsMap::containsKey)
                             .collect(Collectors.toSet());
@@ -376,15 +419,22 @@ public class Generator {
                         fieldsMap.put(fieldSlot, newSet);
                     }
                 } else {
+                    logger.info("Registering as a house");
                     houses.add(slot);
                 }
 
+                logger.info("Flattening terrain");
                 terrainProcessor.flatten(slot, Vec.up, 3 * safeSlotRadius / 4);
+            } else {
+                logger.info("Ignoring because of water");
             }
         }
 
+        logger.info("Removing isolated fields...");
+
         fieldsMap.entrySet().removeIf(entry -> {
             if (entry.getValue().size() < 2) {
+                logger.info("Turning field at " + entry.getKey().getCenter().getTerrainBlock() + " into a house");
                 houses.add(entry.getKey());
                 return true;
             }
@@ -392,21 +442,30 @@ public class Generator {
         });
 
         BlockPlanks.EnumType woodVariant = terrainProcessor.mostCommonWoodVariant();
+        logger.info("Most common wood variant harvested: " + woodVariant);
 
         HouseBuilder houseBuilder = new HouseBuilder(world, graph, woodVariant);
 
+        logger.info("Building houses...");
+
         for (Slot slot : houses) {
+            logger.info("Building house at " + slot.getCenter().getTerrainBlock());
             houseBuilder.build(slot, 5 * safeSlotRadius / 3);
         }
 
         FieldBuilder fieldBuilder = new FieldBuilder(world, graph, positions, woodVariant);
 
-        for (Set<Slot> slot : new HashSet<>(fieldsMap.values())) {
-            fieldBuilder.build(slot);
+        logger.info("Building fields...");
+
+        for (Set<Slot> slots : new HashSet<>(fieldsMap.values())) {
+            logger.info("Building group of " + slots.size() + " fields");
+            fieldBuilder.build(slots);
         }
     }
 
     private void debugNodes() {
+        logger.info("Debugging nodes");
+
         int color = 0;
 
         for (Slot node : graph.nodes()) {
@@ -420,6 +479,8 @@ public class Generator {
     }
 
     private void debugEdges() {
+        logger.info("Debugging edges");
+
         for (Slot slot : graph.nodes()) {
             for (int i = 0; i < 5; i++) {
                 world.setBlockState(slot.getCenter().getTerrainBlock().add(0, i, 0), Blocks.REDSTONE_BLOCK.getDefaultState());

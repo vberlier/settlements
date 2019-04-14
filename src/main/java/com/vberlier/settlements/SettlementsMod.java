@@ -14,7 +14,10 @@ public class SettlementsMod {
     public static final String NAME = "Settlements Mod";
     public static final String VERSION = "0.1.0";
 
-    private static Logger logger;
+    @Mod.Instance(MOD_ID)
+    public static SettlementsMod instance;
+
+    private Logger logger;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -29,5 +32,9 @@ public class SettlementsMod {
     @EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new CommandBuildSettlement());
+    }
+
+    public Logger getLogger() {
+        return logger;
     }
 }
