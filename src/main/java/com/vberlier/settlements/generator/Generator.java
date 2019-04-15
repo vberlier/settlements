@@ -462,6 +462,13 @@ public class Generator {
             logger.info("Building group of " + slots.size() + " fields");
             fieldBuilder.build(slots);
         }
+
+        logger.info("Building paths...");
+
+        for (EndpointPair<Slot> edge : graph.edges()) {
+            logger.info("Building path from " + edge.nodeU().getCenter().getTerrainBlock() + " to " + edge.nodeV().getCenter().getTerrainBlock());
+            pathBuilder.build(edge.nodeU(), edge.nodeV());
+        }
     }
 
     private void debugNodes() {

@@ -40,6 +40,7 @@ public class FieldBuilder {
 
             StructureBoundingBox boundingBox = structureBuilder.spawnStructure(windmill, centerBlock.add(0, -5, 0), orientation.rotation());
             randomSlot.setAnchor(StructureBuilder.adjacentBlock(boundingBox, orientation.mul(-1).rotation(), 1));
+            randomSlot.addHitbox(boundingBox);
 
             structureBuilder.rotateColor();
         }

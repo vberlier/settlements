@@ -16,6 +16,9 @@ public class PathBuilder {
         this.woodVariant = woodVariant;
     }
 
+    public void build(Slot fromSlot, Slot toSlot) {
+    }
+
     public BlockPos setBlockOrSlab(BlockPos pos) {
         BlockPos below = pos.add(0, -1, 0);
 

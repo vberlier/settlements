@@ -5,6 +5,7 @@ import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
@@ -29,6 +30,7 @@ public class Slot implements Comparable<Slot> {
     private Position center;
     private final Set<Position> convexHull;
     private BlockPos anchor;
+    private ArrayList<StructureBoundingBox> hitboxes;
 
     public Slot(Collection<Position> surface, Position[][] terrain) {
         logger = SettlementsMod.instance.getLogger();
@@ -93,6 +95,7 @@ public class Slot implements Comparable<Slot> {
         computeConvexHull();
 
         anchor = center.getTerrainBlock();
+        hitboxes = new ArrayList<>();
     }
 
     public static Set<Position> computeEdge(Collection<Position> surface, Position[][] terrain) {
@@ -252,6 +255,29 @@ public class Slot implements Comparable<Slot> {
 
     public BlockPos getAnchor() {
         return anchor;
+    }
+
+    public void addHitboxes(StructureBoundingBox... boxes) {
+        for (StructureBoundingBox box : boxes) {
+            addHitbox(box);
+        }
+    }
+
+    public void addHitbox(StructureBoundingBox box) {
+        hitboxes.add(box);
+    }
+
+    public ArrayList<StructureBoundingBox> getHitboxes() {
+        return hitboxes;
+    }
+
+    public boolean contains(BlockPos pos) {
+        for (StructureBoundingBox hitbox : hitboxes) {
+            if (hitbox.isVecInside(pos)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

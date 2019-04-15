@@ -85,6 +85,8 @@ public class HouseBuilder extends StructureBuilder {
 
         StructureBoundingBox doorBoundingBox = spawnAdjacent(walls, houseDoor, orientation.rotation());
 
+        slot.addHitboxes(walls, foundation, roof);
+
         Vec[] orientationsArray = {
                 extensionOrientation,
                 orientation,
@@ -99,25 +101,28 @@ public class HouseBuilder extends StructureBuilder {
 
             if (n > 3 && !rotation.equals(orientation.rotation()) && availableSpace.isVecInside(adjacentBlock(walls, rotation, smallExtensionLength + extensionLength))) {
                 StructureBoundingBox[] boxes = spawnSmallExtension(walls, foundation, roof, rotation);
+                slot.addHitboxes(boxes);
                 boxes = spawnExtension(boxes[0], boxes[1], boxes[2], rotation);
+                slot.addHitboxes(boxes);
                 n -= 3;
 
                 Rotation angleRotation = orientationsArray[(i + 1) % orientationsArray.length].rotation();
 
                 if (n > 2 && availableSpace.isVecInside(adjacentBlock(boxes[0], angleRotation, extensionLength)) && world.rand.nextBoolean()) {
-                    spawnExtension(boxes[0], boxes[1], boxes[2], angleRotation);
+                    slot.addHitboxes(spawnExtension(boxes[0], boxes[1], boxes[2], angleRotation));
                     i++;
                     n -= 2;
                 } else if (availableSpace.isVecInside(adjacentBlock(boxes[0], angleRotation, smallExtensionLength))) {
-                    spawnSmallExtension(boxes[0], boxes[1], boxes[2], angleRotation);
+                    slot.addHitboxes(spawnSmallExtension(boxes[0], boxes[1], boxes[2], angleRotation));
                     i++;
                     n--;
                 }
             } else if (n > 2 && !rotation.equals(orientation.rotation()) && availableSpace.isVecInside(adjacentBlock(walls, rotation, extensionLength))) {
-                spawnExtension(walls, foundation, roof, rotation);
+                slot.addHitboxes(spawnExtension(walls, foundation, roof, rotation));
                 n -= 2;
             } else if (availableSpace.isVecInside(adjacentBlock(walls, rotation, smallExtensionLength))) {
                 StructureBoundingBox[] boxes = spawnSmallExtension(walls, foundation, roof, rotation);
+                slot.addHitboxes(boxes);
 
                 if (rotation.equals(orientation.rotation())) {
                     doorBoundingBox = spawnAdjacent(boxes[0], houseDoor, rotation);
