@@ -107,6 +107,8 @@ public class PathBuilder {
             world.setBlockState(pos.add(0, -1, 0), Blocks.DIRT.getDefaultState());
         } else if (block instanceof BlockStone) {
             world.setBlockState(pos, randomStonyState());
+        } else if (world.containsAnyLiquid(new AxisAlignedBB(pos))) {
+            world.setBlockState(pos, Blocks.PLANKS.getDefaultState().withProperty(BlockPlanks.VARIANT, woodVariant));
         } else {
             return false;
         }
