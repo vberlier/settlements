@@ -5,6 +5,8 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -56,6 +58,7 @@ public class CommandBuildSettlement extends CommandBase {
         if (world.isAreaLoaded(boundingBox)) {
             try {
                 MinecraftForge.EVENT_BUS.post(new SettlementEvent.Generate(world, boundingBox));
+                world.loadedEntityList.stream().filter(e -> e instanceof EntityItem).forEach(Entity::setDead);
             } catch (Throwable e) {
                 e.printStackTrace();
                 throw e;
