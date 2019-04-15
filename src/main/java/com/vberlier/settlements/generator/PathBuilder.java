@@ -93,9 +93,6 @@ public class PathBuilder {
             }
         } else {
             logger.info("Couldn't join points with A*");
-            for (Point point : new Point(current.getX(), current.getZ()).line(new Point(target.getX(), target.getZ()))) {
-                world.setBlockState(new BlockPos(point.x, 100, point.y), Blocks.REDSTONE_BLOCK.getDefaultState());
-            }
         }
     }
 
