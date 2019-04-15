@@ -387,14 +387,6 @@ public class Generator {
 
             logger.info("Classifying node at " + slot.getCenter().getTerrainBlock());
 
-            // TODO: Add bridges
-
-            // TODO; Add paths
-
-            // TODO: Fix water problem
-
-            // TODO: Fix problem with large selections
-
             if (slot.getCenter().getLiquids().isEmpty()) {
                 if (
                         FieldBuilder.canReplaceWithFarmland(world.getBlockState(slot.getCenter().getTerrainBlock()).getBlock())

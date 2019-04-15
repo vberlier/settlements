@@ -119,6 +119,8 @@ public class TerrainProcessor {
             heightsArray[block.getX() - minX][block.getZ() - minZ] = block.getY();
         }
 
+        Set<BlockPos> liquidEdge = new HashSet<>();
+
         for (BlockPos block : surface) {
             int x = block.getX();
             int z = block.getZ();
@@ -145,6 +147,18 @@ public class TerrainProcessor {
             removeVegetation(x, z);
             clearBlocksAbove(x, y, z);
             fillBlocksBelow(x, y, z);
+
+            BlockPos pos = new BlockPos(x, world.getHeight(x, z) - 1, z);
+
+            if (!world.containsAnyLiquid(new AxisAlignedBB(pos))) {
+                for (int[] offset : Position.neighbors) {
+                    BlockPos neighbor = new BlockPos(x + offset[0], world.getHeight(x + offset[0], z + offset[1]) - 1, z + offset[1]);
+
+                    if (world.containsAnyLiquid(new AxisAlignedBB(neighbor))) {
+                        liquidEdge.add(new BlockPos(x, neighbor.getY(), z));
+                    }
+                }
+            }
         }
 
         for (Position position : slot.getConvexHull()) {
@@ -154,6 +168,12 @@ public class TerrainProcessor {
 
         for (int i = 0; i < 7; i++) {
             cleanupBlocks(minX, minZ, maxX, maxZ);
+        }
+
+        for (BlockPos pos : liquidEdge) {
+            for (int i = 0; i < 12; i++) {
+                world.setBlockState(pos.add(0, -i, 0), Blocks.COBBLESTONE.getDefaultState());
+            }
         }
     }
 
