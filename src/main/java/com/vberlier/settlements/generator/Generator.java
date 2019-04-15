@@ -109,8 +109,6 @@ public class Generator {
         removeShortEdges();
         removeTriangles();
         processGraph();
-
-        debugEdges();
     }
 
     private void computeMaps() {

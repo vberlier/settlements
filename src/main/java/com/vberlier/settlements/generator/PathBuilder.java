@@ -1,11 +1,14 @@
 package com.vberlier.settlements.generator;
 
+import com.vberlier.settlements.util.astar.AStar;
+import com.vberlier.settlements.util.astar.Node;
 import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
 
 public class PathBuilder {
     private final World world;
@@ -17,6 +20,23 @@ public class PathBuilder {
     }
 
     public void build(Slot fromSlot, Slot toSlot) {
+        int padding = 16;
+        BlockPos current = fromSlot.getAnchor();
+        BlockPos target = toSlot.getAnchor();
+
+        StructureBoundingBox box = new StructureBoundingBox(current, target);
+
+        AStar astar = new AStar(
+                box.getXSize() + padding * 2,
+                box.getZSize() + padding * 2,
+                new Node(current.getX() - box.minX + padding, current.getZ() - box.minZ + padding),
+                new Node(target.getX() - box.minX + padding, target.getZ() - box.minZ + padding)
+        );
+
+        for (Node node : astar.findPath()) {
+            BlockPos pos = new BlockPos(node.getRow() + box.minX - padding, 100, node.getCol() + box.minZ - padding);
+            world.setBlockState(pos, Blocks.IRON_BLOCK.getDefaultState());
+        }
     }
 
     public BlockPos setBlockOrSlab(BlockPos pos) {
