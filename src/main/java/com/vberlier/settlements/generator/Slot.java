@@ -129,6 +129,7 @@ public class Slot implements Comparable<Slot> {
         List<Position> hull = ConvexHull.fromEdge(edge, terrain);
 
         Position previous = hull.get(0);
+        hull.add(previous);
 
         for (int i = 1; i < hull.size(); i++) {
             Position current = hull.get(i);
@@ -136,6 +137,8 @@ public class Slot implements Comparable<Slot> {
             for (Point point : new Point(previous).line(current)) {
                 convexHull.add(terrain[(int) point.x][(int) point.y]);
             }
+
+            previous = current;
         }
     }
 
