@@ -106,13 +106,13 @@ public class PathBuilder {
 
             BlockPos behind = projected.normalize().mul(-1).add(pos).block();
 
-            if (world.isAirBlock(behind) && !(world.getBlockState(behind).getBlock() instanceof BlockSlab) && !(world.getBlockState(behind).getBlock() instanceof BlockStairs) && !(world.getBlockState(behind).getBlock() instanceof BlockCrops)) {
+            if (world.isAirBlock(behind) && !(world.getBlockState(behind).getBlock() instanceof BlockSlab) && !(world.getBlockState(behind).getBlock() instanceof BlockStairs) && !(world.getBlockState(behind).getBlock() instanceof BlockCrops) && !(world.getBlockState(behind).getBlock() instanceof BlockTrapDoor)) {
                 if (projected.length() < 0.8) {
                     setStairs(behind, projected.rotation());
                 } else {
                     setSlab(behind);
                 }
-            } else if (!world.isAirBlock(behind.add(0, 1, 0)) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockSlab) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockStairs) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockCrops)) {
+            } else if (!world.isAirBlock(behind.add(0, 1, 0)) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockSlab) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockStairs) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockCrops) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockTrapDoor)) {
                 if (projected.length() < 0.8) {
                     setStairs(pos.add(0, 1, 0), projected.mul(-1).rotation());
                 } else {
