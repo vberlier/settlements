@@ -2,6 +2,7 @@ package com.vberlier.settlements.generator;
 
 import com.google.common.graph.ValueGraph;
 import com.vberlier.settlements.SettlementsMod;
+import com.vberlier.settlements.util.ConvexHull;
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import net.minecraft.util.math.BlockPos;
@@ -118,18 +119,6 @@ public class Slot implements Comparable<Slot> {
         return edge;
     }
 
-    private int relativeConvexOrientation(Position c1, Position c2, Position c3) {
-        int val = (c2.j - c1.j) * (c3.i - c2.i) - (c2.i - c1.i) * (c3.j - c2.j);
-
-        if (val == 0) {
-            return 0;
-        } else if (val > 0) {
-            return 1;
-        } else {
-            return 2;
-        }
-    }
-
     private void computeConvexHull() {
         logger.info("Computing convex hull...");
 
@@ -137,31 +126,17 @@ public class Slot implements Comparable<Slot> {
             return;
         }
 
-        int leftmost = 0;
+        List<Position> hull = ConvexHull.fromEdge(edge, terrain);
 
-        for (int i = 1; i < edge.length; i++) {
-            if (edge[i].i < edge[leftmost].i) {
-                leftmost = i;
-            }
-        }
+        Position previous = hull.get(0);
 
-        int p = leftmost;
+        for (int i = 1; i < hull.size(); i++) {
+            Position current = hull.get(i);
 
-        do {
-            int q = (p + 1) % edge.length;
-
-            for (int i = 0; i < edge.length; i++) {
-                if (relativeConvexOrientation(edge[p], edge[i], edge[q]) == 2) {
-                    q = i;
-                }
-            }
-
-            for (Point point : new Point(edge[p]).line(edge[q])) {
+            for (Point point : new Point(previous).line(current)) {
                 convexHull.add(terrain[(int) point.x][(int) point.y]);
             }
-
-            p = q;
-        } while (p != leftmost);
+        }
     }
 
     public Vec getMiddle() {
