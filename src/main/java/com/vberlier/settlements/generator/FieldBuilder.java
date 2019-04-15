@@ -85,7 +85,9 @@ public class FieldBuilder {
         Set<Position> convexHull = tmpSlot.getConvexHull();
         Set<Position> surface = new HashSet<>();
 
-        Stack<Position> positionStack = Stream.of(tmpSlot.getCenter()).collect(Collectors.toCollection(Stack::new));
+        Slot firstSlot = slots.stream().findFirst().get();
+
+        Stack<Position> positionStack = Stream.of(firstSlot.getCenter()).collect(Collectors.toCollection(Stack::new));
 
         while (!positionStack.isEmpty()) {
             Position position = positionStack.pop();
