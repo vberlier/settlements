@@ -442,7 +442,7 @@ public class Generator {
         BlockPlanks.EnumType woodVariant = terrainProcessor.mostCommonWoodVariant();
         logger.info("Most common wood variant harvested: " + woodVariant);
 
-        PathBuilder pathBuilder = new PathBuilder(world, woodVariant);
+        PathBuilder pathBuilder = new PathBuilder(world, positions, originX, originZ, sizeX, sizeZ, woodVariant);
         HouseBuilder houseBuilder = new HouseBuilder(world, graph, woodVariant, pathBuilder);
 
         logger.info("Building houses...");
@@ -462,6 +462,8 @@ public class Generator {
         }
 
         logger.info("Building paths...");
+
+        pathBuilder.setHitboxes(graph.nodes().stream().flatMap(slot -> slot.getHitboxes().stream()).collect(Collectors.toList()));
 
         for (EndpointPair<Slot> edge : graph.edges()) {
             logger.info("Building path from " + edge.nodeU().getCenter().getTerrainBlock() + " to " + edge.nodeV().getCenter().getTerrainBlock());

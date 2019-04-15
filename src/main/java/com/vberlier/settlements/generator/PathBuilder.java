@@ -10,31 +10,64 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PathBuilder {
     private final World world;
+    private final Position[][] terrain;
+    private int originX;
+    private int originZ;
+    private int sizeX;
+    private int sizeZ;
+    private List<StructureBoundingBox> hitboxes;
+
     private final BlockPlanks.EnumType woodVariant;
 
-    public PathBuilder(World world, BlockPlanks.EnumType woodVariant) {
+    public PathBuilder(World world, Position[][] terrain, int originX, int originZ, int sizeX, int sizeZ, BlockPlanks.EnumType woodVariant) {
         this.world = world;
+        this.terrain = terrain;
+        this.originX = originX;
+        this.originZ = originZ;
+        this.sizeX = sizeX;
+        this.sizeZ = sizeZ;
         this.woodVariant = woodVariant;
+
+        hitboxes = new ArrayList<>();
     }
 
     public void build(Slot fromSlot, Slot toSlot) {
-        int padding = 16;
         BlockPos current = fromSlot.getAnchor();
         BlockPos target = toSlot.getAnchor();
 
-        StructureBoundingBox box = new StructureBoundingBox(current, target);
-
         AStar astar = new AStar(
-                box.getXSize() + padding * 2,
-                box.getZSize() + padding * 2,
-                new Node(current.getX() - box.minX + padding, current.getZ() - box.minZ + padding),
-                new Node(target.getX() - box.minX + padding, target.getZ() - box.minZ + padding)
+                sizeX,
+                sizeZ,
+                new Node(current.getX() - originX, current.getZ() - originZ),
+                new Node(target.getX() - originX, target.getZ() - originZ)
         );
 
+        ArrayList<Integer[]> blocks = new ArrayList<>();
+
+        for (StructureBoundingBox hitbox : hitboxes) {
+            for (int x = hitbox.minX - 1; x < hitbox.maxX + 1; x++) {
+                for (int z = hitbox.minZ - 1; z < hitbox.maxZ + 1; z++) {
+                    blocks.add(new Integer[] {x - originX, z - originZ});
+                }
+            }
+        }
+
+        int[][] blocksArray = new int[blocks.size()][];
+
+        for (int i = 0; i < blocks.size(); i++) {
+            Integer[] block = blocks.get(i);
+            blocksArray[i] = new int[] {block[0], block[1]};
+        }
+
+        astar.setBlocks(blocksArray);
+
         for (Node node : astar.findPath()) {
-            BlockPos pos = new BlockPos(node.getRow() + box.minX - padding, 100, node.getCol() + box.minZ - padding);
+            BlockPos pos = new BlockPos(node.getRow() + originX, 100, node.getCol() + originZ);
             world.setBlockState(pos, Blocks.IRON_BLOCK.getDefaultState());
         }
     }
@@ -137,5 +170,13 @@ public class PathBuilder {
             default:
                 return Blocks.COBBLESTONE.getDefaultState();
         }
+    }
+
+    public void setHitboxes(List<StructureBoundingBox> hitboxes) {
+        this.hitboxes = hitboxes;
+    }
+
+    public List<StructureBoundingBox> getHitboxes() {
+        return hitboxes;
     }
 }
