@@ -1,5 +1,6 @@
 package com.vberlier.settlements.generator;
 
+import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.astar.AStar;
 import com.vberlier.settlements.util.astar.Node;
 import net.minecraft.block.*;
@@ -21,6 +22,7 @@ public class PathBuilder {
     private int sizeX;
     private int sizeZ;
     private List<StructureBoundingBox> hitboxes;
+    private ArrayList<Integer[]> blocks;
 
     private final BlockPlanks.EnumType woodVariant;
 
@@ -34,6 +36,7 @@ public class PathBuilder {
         this.woodVariant = woodVariant;
 
         hitboxes = new ArrayList<>();
+        blocks = new ArrayList<>();
     }
 
     public void build(Slot fromSlot, Slot toSlot) {
@@ -47,16 +50,6 @@ public class PathBuilder {
                 new Node(target.getX() - originX, target.getZ() - originZ)
         );
 
-        ArrayList<Integer[]> blocks = new ArrayList<>();
-
-        for (StructureBoundingBox hitbox : hitboxes) {
-            for (int x = hitbox.minX - 1; x < hitbox.maxX + 1; x++) {
-                for (int z = hitbox.minZ - 1; z < hitbox.maxZ + 1; z++) {
-                    blocks.add(new Integer[] {x - originX, z - originZ});
-                }
-            }
-        }
-
         int[][] blocksArray = new int[blocks.size()][];
 
         for (int i = 0; i < blocks.size(); i++) {
@@ -66,9 +59,56 @@ public class PathBuilder {
 
         astar.setBlocks(blocksArray);
 
-        for (Node node : astar.findPath()) {
-            BlockPos pos = new BlockPos(node.getRow() + originX, 100, node.getCol() + originZ);
-            world.setBlockState(pos, Blocks.IRON_BLOCK.getDefaultState());
+        List<Node> path = astar.findPath();
+
+        if (!path.isEmpty()) {
+            for (Node node : path) {
+                BlockPos pos = new BlockPos(node.getRow() + originX, 100, node.getCol() + originZ);
+                world.setBlockState(pos, Blocks.IRON_BLOCK.getDefaultState());
+            }
+        } else {
+            for (Point point : new Point(current.getX(), current.getZ()).line(new Point(target.getX(), target.getZ()))) {
+                world.setBlockState(new BlockPos(point.x, 100, point.y), Blocks.REDSTONE_BLOCK.getDefaultState());
+            }
+        }
+    }
+
+    public void computeBlocks() {
+        for (StructureBoundingBox hitbox : hitboxes) {
+            for (int x = hitbox.minX - 1; x < hitbox.maxX + 1; x++) {
+                for (int z = hitbox.minZ - 1; z < hitbox.maxZ + 1; z++) {
+                    blocks.add(new Integer[] {x - originX, z - originZ});
+                }
+            }
+        }
+
+        for (int i = 0; i < sizeX; i++) {
+            blocks.add(new Integer[] {i, 0});
+            blocks.add(new Integer[] {i, sizeZ - 1});
+        }
+
+        for (int i = 0; i < sizeZ; i++) {
+            blocks.add(new Integer[] {0, i});
+            blocks.add(new Integer[] {sizeX - 1, i});
+        }
+
+        for (int i = 1; i < sizeX - 1; i++) {
+            for (int j = 1; j < sizeZ - 1; j++) {
+                Integer[] block = {i, j};
+                Position position = terrain[i][j];
+
+                if (position.getLiquids().size() > 0) {
+                    blocks.add(block);
+                }
+
+                for (int[] offset : Position.neighbors) {
+                    Position neighbor = terrain[i + offset[0]][j + offset[1]];
+
+                    if (neighbor.getLiquids().size() > 0) {
+                        blocks.add(block);
+                    }
+                }
+            }
         }
     }
 
