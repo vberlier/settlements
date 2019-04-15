@@ -157,7 +157,7 @@ public class StructureBuilder {
                 world.setBlockState(pos, newState);
             } else {
                 for (IProperty property : state.getProperties().keySet()) {
-                    if (property.getValueClass() == BlockPlanks.EnumType.class) {
+                    if (property.getAllowedValues().contains(woodVariant)) {
                         world.setBlockState(pos, state.withProperty(property, woodVariant));
                         break;
                     }
