@@ -21,3 +21,7 @@ The command typically takes 10 to 20 seconds to run but it depends on the size o
 **:warning: Disclaimer :warning:**
 
 This is a proof-of-concept. The generator is far from optimized, lacks a lot of features, and you definitely don't want to see the code...
+
+---
+
+License - [MIT](https://github.com/vberlier/settlements/blob/master/LICENSE)
