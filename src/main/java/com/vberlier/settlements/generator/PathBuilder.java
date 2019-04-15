@@ -1,6 +1,7 @@
 package com.vberlier.settlements.generator;
 
 import com.vberlier.settlements.util.Point;
+import com.vberlier.settlements.util.Vec;
 import com.vberlier.settlements.util.astar.AStar;
 import com.vberlier.settlements.util.astar.Node;
 import net.minecraft.block.*;
@@ -54,7 +55,7 @@ public class PathBuilder {
 
         for (int i = 0; i < blocks.size(); i++) {
             Integer[] block = blocks.get(i);
-            blocksArray[i] = new int[] {block[0], block[1]};
+            blocksArray[i] = new int[]{block[0], block[1]};
         }
 
         astar.setBlocks(blocksArray);
@@ -77,19 +78,51 @@ public class PathBuilder {
         for (StructureBoundingBox hitbox : hitboxes) {
             for (int x = hitbox.minX - 1; x < hitbox.maxX + 1; x++) {
                 for (int z = hitbox.minZ - 1; z < hitbox.maxZ + 1; z++) {
-                    blocks.add(new Integer[] {x - originX, z - originZ});
+                    blocks.add(new Integer[]{x - originX, z - originZ});
                 }
             }
         }
 
+        int[][] heightMap = new int[sizeX][sizeZ];
+
         for (int i = 0; i < sizeX; i++) {
-            blocks.add(new Integer[] {i, 0});
-            blocks.add(new Integer[] {i, sizeZ - 1});
+            for (int j = 0; j < sizeZ; j++) {
+                heightMap[i][j] = world.getHeight(i + originX, j + originZ);
+            }
+        }
+
+        Vec[][] vertices = new Vec[sizeX - 1][sizeZ - 1];
+
+        for (int i = 0; i < sizeX - 1; i++) {
+            for (int j = 0; j < sizeZ - 1; j++) {
+                vertices[i][j] = new Vec(
+                        i + originX + 0.5,
+                        (double) (heightMap[i][j] + heightMap[i + 1][j] + heightMap[i + 1][j + 1] + heightMap[i][j + 1]) / 4.0,
+                        j + originZ + 0.5
+                );
+            }
+        }
+
+        Vec[][] normals = new Vec[sizeX][sizeZ];
+
+        for (int i = 0; i < sizeX; i++) {
+            blocks.add(new Integer[]{i, 0});
+            normals[i][0] = Vec.up;
+            blocks.add(new Integer[]{i, sizeZ - 1});
+            normals[i][sizeZ - 1] = Vec.up;
         }
 
         for (int i = 0; i < sizeZ; i++) {
-            blocks.add(new Integer[] {0, i});
-            blocks.add(new Integer[] {sizeX - 1, i});
+            blocks.add(new Integer[]{0, i});
+            normals[0][i] = Vec.up;
+            blocks.add(new Integer[]{sizeX - 1, i});
+            normals[sizeX - 1][i] = Vec.up;
+        }
+
+        for (int i = 1; i < sizeX - 1; i++) {
+            for (int j = 1; j < sizeZ - 1; j++) {
+                normals[i][j] = Vec.normal(vertices[i - 1][j - 1], vertices[i - 1][j], vertices[i][j], vertices[i][j - 1]).normalize();
+            }
         }
 
         for (int i = 1; i < sizeX - 1; i++) {
@@ -107,6 +140,12 @@ public class PathBuilder {
                     if (neighbor.getLiquids().size() > 0) {
                         blocks.add(block);
                     }
+                }
+
+                Vec normal = normals[i][j];
+
+                if (normal.project(Vec.Axis.Y).length() < 0.8) {
+                    blocks.add(block);
                 }
             }
         }
