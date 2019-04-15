@@ -467,7 +467,7 @@ public class Generator {
         pathBuilder.computeBlocks();
 
         for (EndpointPair<Slot> edge : graph.edges()) {
-            logger.info("Building path from " + edge.nodeU().getCenter().getTerrainBlock() + " to " + edge.nodeV().getCenter().getTerrainBlock());
+            logger.info("Building path from " + edge.nodeU().getAnchor() + " to " + edge.nodeV().getAnchor());
             pathBuilder.build(edge.nodeU(), edge.nodeV());
         }
     }

@@ -1,5 +1,6 @@
 package com.vberlier.settlements.generator;
 
+import com.vberlier.settlements.SettlementsMod;
 import com.vberlier.settlements.util.Point;
 import com.vberlier.settlements.util.Vec;
 import com.vberlier.settlements.util.astar.AStar;
@@ -7,10 +8,12 @@ import com.vberlier.settlements.util.astar.Node;
 import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.Rotation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.List;
 public class PathBuilder {
     private final World world;
     private final Position[][] terrain;
+    private final Logger logger;
     private int originX;
     private int originZ;
     private int sizeX;
@@ -38,6 +42,8 @@ public class PathBuilder {
 
         hitboxes = new ArrayList<>();
         blocks = new ArrayList<>();
+
+        logger = SettlementsMod.instance.getLogger();
     }
 
     public void build(Slot fromSlot, Slot toSlot) {
@@ -51,6 +57,8 @@ public class PathBuilder {
                 new Node(target.getX() - originX, target.getZ() - originZ)
         );
 
+        logger.info("Copying blocks array...");
+
         int[][] blocksArray = new int[blocks.size()][];
 
         for (int i = 0; i < blocks.size(); i++) {
@@ -60,24 +68,67 @@ public class PathBuilder {
 
         astar.setBlocks(blocksArray);
 
+        logger.info("Running A*");
         List<Node> path = astar.findPath();
 
         if (!path.isEmpty()) {
+            logger.info("Path size: " + path.size());
+
+            BlockPos previous = current;
+            Vec direction = new Vec(target).sub(previous).normalize();
+
             for (Node node : path) {
-                BlockPos pos = new BlockPos(node.getRow() + originX, 100, node.getCol() + originZ);
-                world.setBlockState(pos, Blocks.IRON_BLOCK.getDefaultState());
+                BlockPos pos = new BlockPos(node.getRow() + originX, world.getHeight(node.getRow() + originX, node.getCol() + originZ) - 1, node.getCol() + originZ);
+                Block block = world.getBlockState(pos).getBlock();
+
+                if (block instanceof BlockSlab || block instanceof BlockStairs || block instanceof BlockCrops) {
+                    pos = pos.add(0, -1, 0);
+                }
+
+                pathStrip(pos, direction);
+                pathStrip(pos.add(1, 0, 0), direction);
+
+                direction = new Vec(pos).sub(previous).normalize();
+                previous = pos;
             }
         } else {
+            logger.info("Couldn't join points with A*");
             for (Point point : new Point(current.getX(), current.getZ()).line(new Point(target.getX(), target.getZ()))) {
                 world.setBlockState(new BlockPos(point.x, 100, point.y), Blocks.REDSTONE_BLOCK.getDefaultState());
             }
         }
     }
 
+    private void pathStrip(BlockPos center, Vec direction) {
+        Vec sideways = direction.cross(Vec.up).normalize();
+        Vec projected = direction.project(Vec.Axis.X, Vec.Axis.Z);
+
+        for (double i = -1; i <= 1; i += 0.5) {
+            BlockPos pos = sideways.mul(i).add(center).block();
+            setBlock(pos);
+
+            BlockPos behind = projected.normalize().mul(-1).add(pos).block();
+
+            if (world.isAirBlock(behind) && !(world.getBlockState(behind).getBlock() instanceof BlockSlab) && !(world.getBlockState(behind).getBlock() instanceof BlockStairs) && !(world.getBlockState(behind).getBlock() instanceof BlockCrops)) {
+                if (projected.length() < 0.8) {
+                    setStairs(behind, projected.rotation());
+                } else {
+                    setSlab(behind);
+                }
+            } else if (!world.isAirBlock(behind.add(0, 1, 0)) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockSlab) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockStairs) && !(world.getBlockState(behind.add(0, 1, 0)).getBlock() instanceof BlockCrops)) {
+                if (projected.length() < 0.8) {
+                    setStairs(pos.add(0, 1, 0), projected.mul(-1).rotation());
+                } else {
+                    setSlab(pos.add(0, 1, 0));
+                }
+            }
+        }
+    }
+
     public void computeBlocks() {
         for (StructureBoundingBox hitbox : hitboxes) {
-            for (int x = hitbox.minX - 1; x < hitbox.maxX + 1; x++) {
-                for (int z = hitbox.minZ - 1; z < hitbox.maxZ + 1; z++) {
+            for (int x = Math.max(hitbox.minX, originX); x < Math.min(hitbox.maxX, originX + sizeX); x++) {
+                for (int z = Math.max(hitbox.minZ, originZ); z < Math.min(hitbox.maxZ, originZ + sizeZ); z++) {
                     blocks.add(new Integer[]{x - originX, z - originZ});
                 }
             }
@@ -144,7 +195,7 @@ public class PathBuilder {
 
                 Vec normal = normals[i][j];
 
-                if (normal.project(Vec.Axis.Y).length() < 0.8) {
+                if (normal.project(Vec.Axis.Y).length() < 0.6) {
                     blocks.add(block);
                 }
             }
@@ -177,11 +228,11 @@ public class PathBuilder {
         IBlockState state = world.getBlockState(pos);
         Block block = state.getBlock();
 
-        if (!world.isAirBlock(pos.add(0, 1, 0))) {
+        if (!(block instanceof BlockFarmland) && !world.isAirBlock(pos.add(0, 1, 0))) {
             return false;
         }
 
-        if (block instanceof BlockDirt || block instanceof BlockGrass || block instanceof BlockSand) {
+        if (block instanceof BlockDirt || block instanceof BlockGrass || block instanceof BlockSand || block instanceof BlockFarmland) {
             world.setBlockState(pos, randomGrassyState());
             world.setBlockState(pos.add(0, -1, 0), Blocks.DIRT.getDefaultState());
         } else if (block instanceof BlockStone) {
@@ -216,7 +267,7 @@ public class PathBuilder {
         IBlockState state = world.getBlockState(below);
         Block block = state.getBlock();
 
-        if (block instanceof BlockDirt || block instanceof BlockGrass || block instanceof BlockGrassPath) {
+        if (block instanceof BlockDirt || block instanceof BlockGrass || block instanceof BlockGrassPath || block instanceof BlockFarmland) {
             world.setBlockState(pos, Blocks.WOODEN_SLAB.getDefaultState().withProperty(BlockPlanks.VARIANT, woodVariant));
         } else if (block instanceof BlockGravel || block == Blocks.COBBLESTONE || block instanceof BlockStone) {
             world.setBlockState(pos, Blocks.STONE_SLAB.getDefaultState().withProperty(BlockStoneSlab.VARIANT, BlockStoneSlab.EnumType.COBBLESTONE));
@@ -225,6 +276,9 @@ public class PathBuilder {
         }
 
         return true;
+    }
+
+    private void setStairs(BlockPos pos, Rotation rotation) {
     }
 
     private IBlockState randomGrassyState() {
