@@ -20,7 +20,7 @@ The command typically takes 10 to 20 seconds to run but it depends on the size o
 
 **:warning: Disclaimer :warning:**
 
-This is a proof-of-concept. The generator is far from optimized, lacks a lot of features, and you definitely don't want to see the code...
+This is a proof-of-concept. The generator is far from optimized and lacks a lot of features. The code is also... really bad. Try not to look in there for too long :grimacing:
 
 ---
 
