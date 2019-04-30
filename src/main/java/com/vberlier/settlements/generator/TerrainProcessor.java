@@ -180,7 +180,7 @@ public class TerrainProcessor {
     private void removeVegetation(int x, int z) {
         BlockPos current = new BlockPos(x, world.getHeight(x, z), z);
 
-        while (current.getY() > 0) {
+        while (current.getY() > 40) {
             IBlockState state = world.getBlockState(current);
             Block block = state.getBlock();
 
@@ -304,7 +304,7 @@ public class TerrainProcessor {
         IBlockState state = world.getBlockState(current);
         Block block = state.getBlock();
 
-        while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP) || block instanceof BlockHugeMushroom) {
+        while (current.getY() > 40 && (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP) || block instanceof BlockHugeMushroom)) {
             world.setBlockToAir(current);
 
             current = current.down();
@@ -323,7 +323,7 @@ public class TerrainProcessor {
                 state = world.getBlockState(current);
                 block = state.getBlock();
 
-                while (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP) || block instanceof BlockHugeMushroom) {
+                while (current.getY() > 40 && (block.isAir(state, world, current) || block.isPassable(world, current) || block.isFlammable(world, current, EnumFacing.UP) || block instanceof BlockHugeMushroom)) {
                     if (block.isWood(world, current) || block instanceof BlockHugeMushroom) {
                         cleanupAdjacentVegetation(current.getX(), current.getZ());
                         break;
