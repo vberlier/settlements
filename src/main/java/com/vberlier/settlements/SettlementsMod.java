@@ -12,7 +12,7 @@ import org.apache.logging.log4j.Logger;
 public class SettlementsMod {
     public static final String MOD_ID = "settlements";
     public static final String NAME = "Settlements Mod";
-    public static final String VERSION = "0.1.0";
+    public static final String VERSION = "0.1.1";
 
     @Mod.Instance(MOD_ID)
     public static SettlementsMod instance;
