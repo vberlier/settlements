@@ -4,6 +4,10 @@
 
 This project is a Forge mod submission for the [Generative Design in Minecraft](http://gendesignmc.engineering.nyu.edu/) Settlement Generation Competition.
 
+![Screenshot](https://github.com/vberlier/settlements/raw/master/screenshot.png)
+
+> Check out the [Imgur album](https://imgur.com/a/ua4z2gt) for more screenshots.
+
 ## Download
 
 - [Download for Minecraft 1.12](https://github.com/vberlier/settlements/raw/master/submissions/GDMC%202019%20-%20Valentin%20Berlier%202/settlements-0.1.1.jar)
